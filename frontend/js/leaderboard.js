@@ -1,6 +1,9 @@
 import { fetchLeaderboard, fetchMyTerritories } from './api.js';
 import { getUser } from './auth.js';
 
+let _period = "all";
+let _sort = "area";
+
 function escapeHtml(str) {
     if (!str) {return "";}
     return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
@@ -16,9 +19,17 @@ function timeLeft(expiresAt) {
     return { text: `${hours} ч ${Math.floor((diff % 3600000) / 60000)} мин`, color: "#f44336" };
 }
 
-export async function loadLeaderboard() {
+function setActive(btnId) {
+    document.querySelectorAll(".lb-toggle").forEach(b => b.classList.remove("active"));
+    const btn = document.getElementById(btnId);
+    if (btn) { btn.classList.add("active"); }
+}
+
+export async function loadLeaderboard(period, sort) {
+    if (period !== undefined) { _period = period; }
+    if (sort !== undefined) { _sort = sort; }
     try {
-        const data = await fetchLeaderboard();
+        const data = await fetchLeaderboard(_period, _sort);
         const user = getUser();
         const html = data.length === 0
             ? '<p style="text-align:center;color:#999;">Пока никто не захватил территорию</p>'
@@ -28,13 +39,31 @@ export async function loadLeaderboard() {
                     <span style="flex:1;font-weight:${escapeHtml(u.username) === escapeHtml(user.username) ? 'bold' : 'normal'};">
                         ${escapeHtml(u.username)}${u.username === user.username ? ' ← вы' : ''}
                     </span>
-                    <span style="color:#666;font-size:13px;">${(u.total_area / 1000000).toFixed(2)} км²</span>
+                    <span style="color:#666;font-size:13px;text-align:right;">
+                        ${(u.total_area / 1000000).toFixed(2)} км²<br>
+                        <span style="font-size:11px;color:#999;">${u.territories_count} тер.</span>
+                    </span>
                 </div>
             `).join('');
         document.getElementById("leaderboardContent").innerHTML = html;
     } catch (e) {
         document.getElementById("leaderboardContent").innerHTML = '<p style="color:#f44336;">Ошибка загрузки</p>';
     }
+}
+
+export function initLeaderboard() {
+    document.querySelectorAll(".lb-period-btn").forEach(btn => {
+        btn.onclick = () => {
+            setActive(btn.id);
+            loadLeaderboard(btn.dataset.period, _sort);
+        };
+    });
+    document.querySelectorAll(".lb-sort-btn").forEach(btn => {
+        btn.onclick = () => {
+            setActive(btn.id);
+            loadLeaderboard(_period, btn.dataset.sort);
+        };
+    });
 }
 
 export async function loadMyTerritories() {

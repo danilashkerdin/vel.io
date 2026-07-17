@@ -58,8 +58,8 @@ export async function deleteTerritory(id) {
     return res;
 }
 
-export async function fetchLeaderboard() {
-    const res = await _fetch(`${API}/api/leaderboard`);
+export async function fetchLeaderboard(period = "all", sort = "area") {
+    const res = await _fetch(`${API}/api/leaderboard?period=${period}&sort=${sort}`);
     return res.json();
 }
 

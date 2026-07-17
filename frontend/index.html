@@ -168,6 +168,14 @@
         <div class="modal-content">
             <button class="modal-close" id="closeLeaderboardModal">✕</button>
             <h3>🏆 Рейтинг</h3>
+            <div style="display:flex;gap:6px;margin-bottom:10px;flex-wrap:wrap;">
+                <button class="lb-toggle lb-period-btn active" id="lbPeriodAll" data-period="all">Всё время</button>
+                <button class="lb-toggle lb-period-btn" id="lbPeriodWeek" data-period="week">Неделя</button>
+                <button class="lb-toggle lb-period-btn" id="lbPeriodMonth" data-period="month">Месяц</button>
+                <span style="flex:1;"></span>
+                <button class="lb-toggle lb-sort-btn active" id="lbSortArea" data-sort="area">по площади</button>
+                <button class="lb-toggle lb-sort-btn" id="lbSortCount" data-sort="count">по кол-ву</button>
+            </div>
             <div id="leaderboardContent">Загрузка...</div>
         </div>
     </div>

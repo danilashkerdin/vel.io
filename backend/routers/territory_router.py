@@ -210,12 +210,25 @@ async def upload_gpx(
 def leaderboard(
     limit: int = Query(20, ge=1, le=100),
     offset: int = Query(0, ge=0),
+    period: str = Query("all", regex="^(week|month|all)$"),
+    sort: str = Query("area", regex="^(area|count)$"),
     db: Session = Depends(get_db),
 ):
     now = time.time()
-    if _leaderboard_cache["data"] is not None and now - _leaderboard_cache["ts"] < LEADERBOARD_TTL:
+    cache_key = f"{period}_{sort}_{limit}_{offset}"
+    if _leaderboard_cache["data"] is not None and _leaderboard_cache["ts"] == cache_key and now - _leaderboard_cache["ts"] < LEADERBOARD_TTL:
         return _leaderboard_cache["data"]
     from services.territory_service import _active_territories
+
+    filters = [_active_territories()]
+    if period == "week":
+        week_ago = datetime.now(timezone.utc) - timedelta(days=7)
+        filters.append(Territory.created_at >= week_ago)
+    elif period == "month":
+        month_ago = datetime.now(timezone.utc) - timedelta(days=30)
+        filters.append(Territory.created_at >= month_ago)
+
+    order = func.sum(Territory.area).desc() if sort == "area" else func.count(Territory.id).desc()
 
     results = (
         db.query(
@@ -224,9 +237,9 @@ def leaderboard(
             func.count(Territory.id).label("count"),
         )
         .join(Territory, Territory.user_id == User.id)
-        .filter(_active_territories())
+        .filter(*filters)
         .group_by(User.id, User.username)
-        .order_by(func.sum(Territory.area).desc())
+        .order_by(order)
         .offset(offset)
         .limit(limit)
         .all()

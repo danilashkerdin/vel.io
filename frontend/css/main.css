@@ -667,6 +667,22 @@ a.menu-link:active {
     color: var(--color-primary);
 }
 
+.lb-toggle {
+    padding: 5px 12px;
+    border: 1px solid var(--color-border);
+    border-radius: 16px;
+    background: transparent;
+    color: var(--color-text-muted);
+    font-size: 12px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+.lb-toggle.active {
+    background: var(--gradient-primary);
+    color: #fff;
+    border-color: transparent;
+}
+
 /* == Premium modal == */
 .premium-header {
     text-align: center;

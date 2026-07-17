@@ -3,7 +3,7 @@ import { initMap, loadTerritories } from './map.js';
 import { setupUpload } from './upload.js';
 import { editTerritory, saveTerritory, setTerritoriesData } from './editor.js';
 import { showShareModal, shareTelegram, shareCopyLink } from './share.js';
-import { loadLeaderboard, loadMyTerritories } from './leaderboard.js';
+import { loadLeaderboard, loadMyTerritories, initLeaderboard } from './leaderboard.js';
 import { loadNotifications, readAll } from './notifications.js';
 import { toggleMenu, closeMenu, openModal, closeModals, showToast } from './ui.js';
 import { deleteTerritory, createStarInvoice, fetchPremiumStatus } from './api.js';
@@ -15,7 +15,7 @@ import { showUserProfile } from './profile.js';
 
 window.editTerritory = editTerritory;
 window.deleteTerritory = async function(id) {
-    if (!confirm("Удалить?")) return;
+    if (!confirm("Удалить?")) {return;}
     try {
         await deleteTerritory(id);
         showToast("🗑 Удалено", "success");
@@ -39,7 +39,7 @@ async function handleBuyPremium() {
         if (window.Telegram?.WebApp?.openInvoice) {
             window.Telegram.WebApp.openInvoice(url, (status) => {
                 if (status === "paid") { showToast("✅ Премиум активирован!", "success"); refreshPremiumStatus(); }
-                else showToast("❌ Оплата не завершена", "error");
+                else {showToast("❌ Оплата не завершена", "error");}
             });
         } else {
             window.location.href = url;
@@ -143,7 +143,7 @@ async function loadBalance() {
         const withdrawBtn = document.getElementById("requestPayoutBtn");
         if (withdrawBtn) {
             withdrawBtn.onclick = async () => {
-                if (!confirm(`Запросить выплату ${data.balance_rub}₽? Администратор обработает запрос.`)) return;
+                if (!confirm(`Запросить выплату ${data.balance_rub}₽? Администратор обработает запрос.`)) {return;}
                 const r = await fetch(`${API}/api/payment/request-payout`, { method: "POST", headers });
                 if (r.ok) { showToast("💸 Запрос на выплату отправлен администратору!", "success"); loadBalance(); }
                 else { const e = await r.json(); showToast(e.detail || "Ошибка", "error"); }
@@ -179,14 +179,14 @@ async function loadReferralLink() {
 }
 
 function copyReferralLink() {
-    if (!_referralLink) return;
+    if (!_referralLink) {return;}
     navigator.clipboard.writeText(_referralLink).then(() => {
         showToast("📋 Ссылка скопирована!", "success");
     });
 }
 
 function shareReferralTelegram() {
-    if (!_referralLink) return;
+    if (!_referralLink) {return;}
     const text = `🚴 Захватывай территории на Velo.io! Я уже там. Переходи по ссылке:\n${_referralLink}`;
     window.open(`https://t.me/share/url?url=${encodeURIComponent(_referralLink)}&text=${encodeURIComponent(text)}`, '_blank');
 }
@@ -240,6 +240,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     updatePremiumMenu();
     initAdvertiser();
     initRecorder();
+    initLeaderboard();
 
     if (!localStorage.getItem("onboarding_done")) {
         setTimeout(() => openModal("onboardingModal"), 300);
@@ -270,16 +271,16 @@ document.addEventListener("DOMContentLoaded", async () => {
             stopAndCapture();
             return;
         }
-        if (isAdvertiser()) openCreateSponsored();
-        else startRecording();
+        if (isAdvertiser()) {openCreateSponsored();}
+        else {startRecording();}
     };
     document.getElementById("menuUploadBtn").onclick = () => { closeMenu(); openModal("uploadModal"); };
     document.getElementById("menuActivity").onclick = () => { closeMenu(); openModal("activityModal"); loadActivity(); };
     document.getElementById("menuLeaderboard").onclick = () => { closeMenu(); openModal("leaderboardModal"); loadLeaderboard(); };
     document.getElementById("menuPremium").onclick = () => {
         closeMenu();
-        if (isPremium()) showToast("⭐ Премиум уже активен", "success");
-        else openModal("premiumModal");
+        if (isPremium()) {showToast("⭐ Премиум уже активен", "success");}
+        else {openModal("premiumModal");}
     };
     document.getElementById("menuBalance").onclick = () => { closeMenu(); openModal("balanceModal"); loadBalance(); };
     document.getElementById("menuReferral").onclick = () => { closeMenu(); openModal("referralModal"); loadReferralLink(); };
@@ -297,7 +298,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     let notifInterval = null;
     function startNotifPolling() {
-        if (notifInterval) return;
+        if (notifInterval) {return;}
         notifInterval = setInterval(loadNotifications, 60000);
     }
     function stopNotifPolling() {
@@ -306,12 +307,12 @@ document.addEventListener("DOMContentLoaded", async () => {
     loadNotifications();
     startNotifPolling();
     document.addEventListener("visibilitychange", () => {
-        if (document.hidden) stopNotifPolling();
+        if (document.hidden) {stopNotifPolling();}
         else { loadNotifications(); startNotifPolling(); }
     });
 
     document.querySelectorAll(".modal-close").forEach(b => b.onclick = closeModals);
-    document.querySelectorAll(".modal").forEach(m => m.onclick = e => { if (e.target === m) closeModals(); });
+    document.querySelectorAll(".modal").forEach(m => m.onclick = e => { if (e.target === m) {closeModals();} });
 
     if ('serviceWorker' in navigator) {
         window.addEventListener('load', () => {
@@ -320,7 +321,7 @@ document.addEventListener("DOMContentLoaded", async () => {
                     console.log('[SW] Registered with scope:', reg.scope);
                     reg.addEventListener('updatefound', () => {
                         const newWorker = reg.installing;
-                        if (!newWorker) return;
+                        if (!newWorker) {return;}
                         newWorker.addEventListener('statechange', () => {
                             if (newWorker.state === 'activated' && navigator.serviceWorker.controller) {
                                 showToast("🔄 Обновление загружено. Обновите страницу.", "success");
