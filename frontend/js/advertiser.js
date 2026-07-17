@@ -1,6 +1,6 @@
 import { getUser } from './auth.js';
 import { createStarInvoice } from './api.js';
-import { openModal, closeModals, closeMenu, showToast } from './ui.js';
+import { openModal, closeModals, showToast } from './ui.js';
 import { getMap } from './map.js';
 import { API } from './config.js';
 
@@ -205,7 +205,6 @@ function onMapClick(e) {
 }
 
 export function openCreateSponsored() {
-    closeMenu?.();
     closeModals();
     clearDraw();
     document.getElementById("sponsoredName").value = "";
@@ -333,19 +332,16 @@ async function saveAdvertiserProfile() {
 }
 
 export function initAdvertiser() {
-    document.getElementById("createSponsoredBtn")?.addEventListener("click", openCreateSponsored);
-    document.getElementById("myAdvertiserZonesBtn")?.addEventListener("click", () => {
-        closeMenu?.();
+    document.getElementById("pfCreateZone")?.addEventListener("click", openCreateSponsored);
+    document.getElementById("pfMyZones")?.addEventListener("click", () => {
         openModal("advertiserZonesModal");
         loadAdvertiserZones();
     });
-    document.getElementById("advertiserDashboardBtn")?.addEventListener("click", () => {
-        closeMenu?.();
+    document.getElementById("pfDashboard")?.addEventListener("click", () => {
         openModal("advertiserDashboardModal");
         loadAdvertiserDashboard();
     });
-    document.getElementById("advertiserProfileBtn")?.addEventListener("click", () => {
-        closeMenu?.();
+    document.getElementById("pfBizProfile")?.addEventListener("click", () => {
         openModal("advertiserProfileModal");
         loadAdvertiserProfile();
     });
