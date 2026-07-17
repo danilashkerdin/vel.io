@@ -41,7 +41,7 @@ export function showShareModal(territory, rewards = null) {
 }
 
 export async function shareTelegram() {
-    if (!lastSharedTerritory) return;
+    if (!lastSharedTerritory) {return;}
     const area = (lastSharedTerritory.area / 1000000).toFixed(2);
     const shareUrl = `${API}/og/${lastSharedTerritory.id}?v=${Date.now()}`;
     let text = `🚴 Я захватил ${area} км² на velo.io!`;
@@ -54,7 +54,7 @@ export async function shareTelegram() {
 }
 
 export function shareCopyLink() {
-    if (!lastSharedTerritory) return;
+    if (!lastSharedTerritory) {return;}
     const url = `${API}/og/${lastSharedTerritory.id}?v=${Date.now()}`;
     navigator.clipboard.writeText(url).then(() => {
         showToast("🔗 Ссылка скопирована!", "success");

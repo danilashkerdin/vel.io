@@ -13,6 +13,7 @@ import { initRecorder, isRecording, startRecording } from './recorder.js';
 import { initPlanner, startPlanner, isPlannerActive, stopPlanner } from './planner.js';
 import { loadActivity, setFlyToHandler } from './activity.js';
 import { showUserProfile } from './profile.js';
+import { loadAchievements } from './achievements.js';
 
 window.editTerritory = editTerritory;
 window.deleteTerritory = async function(id) {
@@ -286,6 +287,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         else {openModal("premiumModal");}
     };
     document.getElementById("menuBalance").onclick = () => { closeMenu(); openModal("balanceModal"); loadBalance(); };
+    document.getElementById("menuAchievements").onclick = () => { closeMenu(); openModal("achievementsModal"); loadAchievements(); };
     document.getElementById("menuReferral").onclick = () => { closeMenu(); openModal("referralModal"); loadReferralLink(); };
     document.getElementById("menuContacts").onclick = () => { closeMenu(); openModal("contactsModal"); };
     document.getElementById("menuLogout").onclick = logout;

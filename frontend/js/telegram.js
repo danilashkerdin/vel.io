@@ -12,7 +12,7 @@ export function isTelegramWebApp() {
 }
 
 export function getTelegram() {
-    if (tg) return tg;
+    if (tg) {return tg;}
     if (window.Telegram?.WebApp) {
         tg = window.Telegram.WebApp;
         return tg;
@@ -21,18 +21,18 @@ export function getTelegram() {
 }
 
 export async function waitForTelegram(timeout = 3000) {
-    if (window.Telegram?.WebApp) return window.Telegram.WebApp;
+    if (window.Telegram?.WebApp) {return window.Telegram.WebApp;}
     const start = Date.now();
     while (Date.now() - start < timeout) {
         await new Promise(r => setTimeout(r, 100));
-        if (window.Telegram?.WebApp) return window.Telegram.WebApp;
+        if (window.Telegram?.WebApp) {return window.Telegram.WebApp;}
     }
     return null;
 }
 
 export function applyTelegramTheme() {
     const t = getTelegram();
-    if (!t) return;
+    if (!t) {return;}
     t.ready();
     t.expand();
 
@@ -41,12 +41,12 @@ export function applyTelegramTheme() {
 
     // Применяем Telegram-тему поверх нашей тёмной
     const root = document.documentElement;
-    if (theme.bg_color) root.style.setProperty('--tg-bg', theme.bg_color);
-    if (theme.text_color) root.style.setProperty('--tg-text', theme.text_color);
-    if (theme.button_color) root.style.setProperty('--tg-btn', theme.button_color);
-    if (theme.button_text_color) root.style.setProperty('--tg-btn-text', theme.button_text_color);
-    if (theme.hint_color) root.style.setProperty('--tg-hint', theme.hint_color);
-    if (theme.link_color) root.style.setProperty('--tg-link', theme.link_color);
+    if (theme.bg_color) {root.style.setProperty('--tg-bg', theme.bg_color);}
+    if (theme.text_color) {root.style.setProperty('--tg-text', theme.text_color);}
+    if (theme.button_color) {root.style.setProperty('--tg-btn', theme.button_color);}
+    if (theme.button_text_color) {root.style.setProperty('--tg-btn-text', theme.button_text_color);}
+    if (theme.hint_color) {root.style.setProperty('--tg-hint', theme.hint_color);}
+    if (theme.link_color) {root.style.setProperty('--tg-link', theme.link_color);}
 
     // Back button
     t.BackButton.onClick(() => {
@@ -56,10 +56,10 @@ export function applyTelegramTheme() {
 
 export async function tryTelegramAuth() {
     const t = getTelegram();
-    if (!t) return null;
+    if (!t) {return null;}
 
     const initData = t.initData;
-    if (!initData) return null;
+    if (!initData) {return null;}
 
     try {
         const res = await fetch(`${API}/api/auth/telegram`, {

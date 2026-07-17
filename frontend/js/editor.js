@@ -11,7 +11,7 @@ export function setTerritoriesData(data) {
 
 export function editTerritory(id) {
     const t = territoriesData.find(t => t.id === id);
-    if (!t) return;
+    if (!t) {return;}
     selectedTerritoryId = id;
     document.getElementById("editName").value = t.name || "";
     document.getElementById("editColor").value = t.color || "#4CAF50";

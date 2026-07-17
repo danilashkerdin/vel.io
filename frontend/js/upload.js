@@ -32,7 +32,7 @@ function handleFile(file) {
 }
 
 async function processFile() {
-    if (!currentFile) return;
+    if (!currentFile) {return;}
 
     const btn = document.getElementById("processBtn");
     const status = document.getElementById("uploadStatus");
@@ -50,7 +50,7 @@ async function processFile() {
         let progress = 0;
         progressInterval = setInterval(() => {
             progress += Math.random() * 15;
-            if (progress > 90) progress = 90;
+            if (progress > 90) {progress = 90;}
             progressFill.style.width = progress + "%";
         }, 500);
 
@@ -99,7 +99,7 @@ async function processFile() {
         status.textContent = `❌ ${e.message}`;
         status.className = "error";
         showToast(e.message, "error");
-        if (progressInterval) clearInterval(progressInterval);
+        if (progressInterval) {clearInterval(progressInterval);}
         document.getElementById("uploadProgress").style.display = "none";
     } finally {
         btn.disabled = false;

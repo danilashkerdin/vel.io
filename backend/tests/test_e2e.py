@@ -21,7 +21,7 @@ os.environ.setdefault("VIP_EMAILS", "[]")
 from database import init_db, SessionLocal
 from main import app
 from limiter import limiter
-from models import User, Territory, Notification, SponsoredTerritory, UserBalance, Transaction
+from models import User, Territory, Notification, SponsoredTerritory, UserBalance, Transaction, UserAchievement, ACHIEVEMENT_TYPES
 from routers.territory_router import _leaderboard_cache
 
 # ── helpers ──────────────────────────────────────────────────────────────────
@@ -30,6 +30,7 @@ from routers.territory_router import _leaderboard_cache
 def _reset_db():
     init_db()
     with SessionLocal() as s:
+        s.execute(UserAchievement.__table__.delete())
         s.execute(UserBalance.__table__.delete())
         s.execute(Transaction.__table__.delete())
         s.execute(Notification.__table__.delete())
@@ -544,3 +545,72 @@ class TestTerritoryCRUD:
 
         r2 = client.get("/api/my-territories", headers=auth_headers(t))
         assert r2.json() == []
+
+
+# ── 12. Achievements ─────────────────────────────────────────────────────────
+
+class TestAchievements:
+    def test_first_capture_achievement(self):
+        t = token("ach_first@test.com")
+        r = capture_ride(t, SQUARE)
+        assert r.status_code == 200
+
+        r2 = client.get("/api/achievements", headers=auth_headers(t))
+        assert r2.status_code == 200
+        types = [a["type"] for a in r2.json()]
+        assert "first_capture" in types
+
+    def test_territories_5_achievement(self):
+        t = token("ach_5@test.com")
+        from models import User as UserModel
+        with SessionLocal() as s:
+            user = s.query(UserModel).first()
+            user.is_premium = True
+            s.commit()
+
+        for _ in range(5):
+            r = capture_ride(t, SQUARE)
+            assert r.status_code == 200
+
+        r2 = client.get("/api/achievements", headers=auth_headers(t))
+        types = [a["type"] for a in r2.json()]
+        assert "territories_5" in types
+
+    def test_premium_achievement(self):
+        t = token("ach_prem@test.com")
+        from models import User as UserModel
+        with SessionLocal() as s:
+            user = s.query(UserModel).filter(UserModel.email == "ach_prem@test.com").first()
+            user.is_premium = True
+            s.commit()
+
+        from services.achievement_service import check_achievements_on_premium
+        with SessionLocal() as s:
+            user = s.query(UserModel).filter(UserModel.email == "ach_prem@test.com").first()
+            check_achievements_on_premium(s, user.id)
+
+        r = client.get("/api/achievements", headers=auth_headers(t))
+        types = [a["type"] for a in r.json()]
+        assert "premium" in types
+
+    def test_referral_achievement(self):
+        t = token("ach_ref1@test.com")
+        uid = client.get("/api/auth/me", headers=auth_headers(t)).json()["id"]
+
+        r = register("ach_ref2@test.com", "ref2", "123456")
+        r2 = client.post(
+            "/api/auth/register",
+            json={"email": "ach_ref3@test.com", "username": "ref3", "password": "123456"},
+            headers={"X-Referral-ID": uid},
+        )
+        assert r2.status_code == 200
+
+        r3 = client.get("/api/achievements", headers=auth_headers(t))
+        types = [a["type"] for a in r3.json()]
+        assert "invite_friend" in types
+
+    def test_achievements_endpoint_returns_all_types(self):
+        t = token("ach_all@test.com")
+        r = client.get("/api/achievements", headers=auth_headers(t))
+        assert r.status_code == 200
+        assert isinstance(r.json(), list)

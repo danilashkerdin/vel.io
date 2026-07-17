@@ -156,3 +156,32 @@ class Transaction(Base):
     sponsored_territory_id = Column(UUID(as_uuid=True), ForeignKey("sponsored_territories.id", ondelete="SET NULL"), nullable=True)
     status = Column(String(50), default="completed")  # for payouts: "pending" | "completed"
     created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+
+
+ACHIEVEMENT_TYPES = {
+    "first_capture": "Первый захват 🚴",
+    "territories_5": "5 территорий 📋",
+    "territories_10": "10 территорий 📋",
+    "territories_25": "25 территорий 📋",
+    "area_1": "1 км² 📏",
+    "area_10": "10 км² 📏",
+    "area_100": "100 км² 📏",
+    "premium": "Премиум ⭐",
+    "invite_friend": "Пригласил друга 🤝",
+    "sponsored_capture": "Спонсорский захват 💰",
+    "comeback": "Вернул своё 🔄",
+    "first_share": "Поделился 🔗",
+}
+
+
+class UserAchievement(Base):
+    __tablename__ = "user_achievements"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    user_id = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
+    achievement_type = Column(String(50), nullable=False)
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+
+    __table_args__ = (
+        Index("ix_user_achievements_user_type", "user_id", "achievement_type", unique=True),
+    )

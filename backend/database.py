@@ -91,8 +91,9 @@ def init_db():
     _add_column_if_not_exists("sponsored_territories", "is_active", "BOOLEAN NOT NULL DEFAULT TRUE")
     _add_column_if_not_exists("territories", "expires_at", "TIMESTAMP WITH TIME ZONE")
     _fix_column_type("notifications", "read", "BOOLEAN DEFAULT FALSE")
-_activate_demo_zone()
+    _activate_demo_zone()
     _cleanup_expired()
+    _notify_expiring_territories()
 
 
 def _fix_column_type(table: str, column: str, new_type: str):
@@ -128,10 +129,7 @@ def _activate_demo_zone():
         ).first()
         if zone and not zone.is_active:
             zone.is_active = True
-session.commit()
-
-    # После очистки — уведомления о скором истечении
-    _notify_expiring_territories()
+            session.commit()
 
 
 def _notify_expiring_territories():
@@ -190,6 +188,7 @@ def _get_columns(table: str) -> set:
 def _cleanup_expired():
     """Удаляет просроченные территории и деактивирует просроченные спонсорские зоны."""
     from datetime import datetime, timezone
+    from models import Territory, SponsoredTerritory
     now = datetime.now(timezone.utc)
     with SessionLocal() as session:
         # Удаляем истёкшие территории обычных пользователей

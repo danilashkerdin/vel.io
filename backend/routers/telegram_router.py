@@ -158,18 +158,18 @@ async def telegram_webhook(request: Request, db: Session = Depends(get_db)):
 
         user.telegram_chat_id = str(chat_id)
 
-            if ref_user_id:
-                try:
-                    ref_uuid = UUID(ref_user_id)
-                    referrer = db.query(User).filter(User.id == ref_uuid).first()
-                    if referrer and referrer.id != user.id:
-                        user.referred_by = referrer.id
-                        referrer.referral_bonuses = (referrer.referral_bonuses or 0) + 1
-                except Exception:
-                    pass
+        if ref_user_id:
+            try:
+                ref_uuid = UUID(ref_user_id)
+                referrer = db.query(User).filter(User.id == ref_uuid).first()
+                if referrer and referrer.id != user.id:
+                    user.referred_by = referrer.id
+                    referrer.referral_bonuses = (referrer.referral_bonuses or 0) + 1
+            except Exception:
+                pass
 
-            db.commit()
-            db.refresh(user)
+        db.commit()
+        db.refresh(user)
 
         token = create_access_token({"sub": str(user.id)})
         deep_link = f"{_make_deep_link()}/?token={token}"

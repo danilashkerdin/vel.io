@@ -7,7 +7,7 @@ export function getUser() {
 }
 
 export function requireAuth() {
-    if (!getToken()) window.location.href = "/auth.html";
+    if (!getToken()) {window.location.href = "/auth.html";}
 }
 
 export function logout() {
@@ -21,7 +21,7 @@ export function authHeaders() {
 
 export function saveUserData(data) {
     const { token, ...user } = data;
-    if (token) localStorage.setItem("token", token);
+    if (token) {localStorage.setItem("token", token);}
     localStorage.setItem("user", JSON.stringify(user));
 }
 
@@ -31,7 +31,7 @@ export function isPremium() {
 
 export function getCapturesRemaining() {
     const u = getUser();
-    if (u.is_premium) return -1;
+    if (u.is_premium) {return -1;}
     return u.captures_remaining ?? u.free_limit ?? 1;
 }
 

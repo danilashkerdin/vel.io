@@ -12,6 +12,7 @@ from database import get_db
 from models import User, UserBalance, Transaction, SponsoredTerritory, Territory, AdvertiserPayment
 from auth import get_current_user
 from services.sponsored_service import get_owned_sponsored
+from services.achievement_service import check_achievements_on_premium
 
 logger = logging.getLogger("velo_io")
 router = APIRouter(tags=["payment"])
@@ -158,6 +159,7 @@ def activate_premium(user_id: str, db: Session):
     if user and not user.is_premium:
         user.is_premium = True
         db.commit()
+        check_achievements_on_premium(db, user_id)
         return True
     return False
 

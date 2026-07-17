@@ -73,7 +73,7 @@ document.getElementById("submitBtn").onclick = async () => {
         } else {
             const headers = { "Content-Type": "application/json" };
             const ref = document.getElementById("refId")?.value;
-            if (ref) headers["X-Referral-ID"] = ref;
+            if (ref) {headers["X-Referral-ID"] = ref;}
             const regUsername = role === "advertiser" ? email.split("@")[0] : username;
             res = await fetch(`${API}/api/auth/register`, {
                 method: "POST",

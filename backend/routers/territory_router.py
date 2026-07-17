@@ -27,6 +27,7 @@ from services.territory_service import (
     delete_territory,
 )
 from services.sponsored_service import process_capture_rewards, get_sponsored_in_bbox
+from services.achievement_service import check_achievements_on_capture
 from limiter import limiter
 
 router = APIRouter(tags=["territories"])
@@ -118,6 +119,8 @@ def _save_and_return(
             {"sha256": sha256, "user_id": current_user.id, "territory_id": territory.id},
         )
     db.commit()
+
+    check_achievements_on_capture(db, current_user.id, result["area_sqm"], sponsored_rewards or [])
 
     response = format_territory_response(territory, current_user)
     if sponsored_rewards:
@@ -430,6 +433,24 @@ def my_territories(
     current_user: User = Depends(get_current_user),
 ):
     return get_my_territories(db, current_user, limit, offset)
+
+
+@router.get("/api/achievements")
+def get_achievements(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    from services.achievement_service import get_user_achievements
+    return get_user_achievements(db, current_user.id)
+
+
+@router.get("/api/achievements/all")
+def get_all_achievements(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    from services.achievement_service import get_achievements_with_progress
+    return get_achievements_with_progress(db, current_user.id)
 
 
 @router.get("/api/initial-view")

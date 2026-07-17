@@ -14,6 +14,7 @@ from schemas.auth import RegisterRequest, LoginRequest
 from schemas.payment import ProfileUpdateRequest
 from config import settings
 from limiter import limiter
+from services.achievement_service import check_achievements_on_referral
 
 router = APIRouter(prefix="/api/auth", tags=["auth"])
 
@@ -65,6 +66,8 @@ async def register(request: Request, data: RegisterRequest, db: Session = Depend
                 user.referred_by = referrer.id
                 referrer.referral_bonuses = (referrer.referral_bonuses or 0) + 1
                 db.add(referrer)
+                db.commit()
+                check_achievements_on_referral(db, referrer.id)
         except Exception:
             pass
 

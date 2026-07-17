@@ -17,11 +17,11 @@ export function isAdvertiser() {
 export function updateAdvertiserUI() {
     const isAdv = isAdvertiser();
     const advertiserSection = document.getElementById("advertiserSection");
-    if (advertiserSection) advertiserSection.style.display = isAdv ? "block" : "none";
+    if (advertiserSection) {advertiserSection.style.display = isAdv ? "block" : "none";}
     const mainSection = document.getElementById("cyclistMainSection");
-    if (mainSection) mainSection.style.display = isAdv ? "none" : "block";
+    if (mainSection) {mainSection.style.display = isAdv ? "none" : "block";}
     const mySection = document.getElementById("cyclistMySection");
-    if (mySection) mySection.style.display = isAdv ? "none" : "block";
+    if (mySection) {mySection.style.display = isAdv ? "none" : "block";}
 }
 
 function showBanner(text) {
@@ -44,7 +44,7 @@ async function loadAdvertiserZones() {
         const r = await fetch(`${API}/api/my-advertiser-zones`, {
             headers: { Authorization: `Bearer ${token}` },
         });
-        if (!r.ok) throw new Error((await r.json()).detail || "Ошибка");
+        if (!r.ok) {throw new Error((await r.json()).detail || "Ошибка");}
         const zones = await r.json();
         if (!zones.length) {
             el.innerHTML = '<p style="color:var(--color-text-muted);text-align:center;">У вас пока нет спонсорских зон</p>';
@@ -94,7 +94,7 @@ function openTopUpZone(zoneId) {
 }
 
 async function handleTopUp() {
-    if (!topUpZoneId) return;
+    if (!topUpZoneId) {return;}
     const stars = parseInt(document.getElementById("topUpStars").value);
     if (!stars || stars < 1000) { showToast("Минимум 1000 ⭐", "error"); return; }
     try {
@@ -108,8 +108,8 @@ async function handleTopUp() {
         if (!url) { showToast("Не удалось получить счёт", "error"); return; }
         if (window.Telegram?.WebApp?.openInvoice) {
             window.Telegram.WebApp.openInvoice(url, (status) => {
-                if (status === "paid") showToast("✅ Счёт оплачен!", "success");
-                else showToast("❌ Оплата не завершена", "error");
+                if (status === "paid") {showToast("✅ Счёт оплачен!", "success");}
+                else {showToast("❌ Оплата не завершена", "error");}
             });
             closeModals();
         } else {
@@ -132,10 +132,10 @@ async function openEditZone(zoneId) {
         const r = await fetch(`${API}/api/my-advertiser-zones`, {
             headers: { Authorization: `Bearer ${token}` },
         });
-        if (!r.ok) throw new Error("Ошибка загрузки");
+        if (!r.ok) {throw new Error("Ошибка загрузки");}
         const zones = await r.json();
         const zone = zones.find(z => z.id === zoneId);
-        if (!zone) throw new Error("Зона не найдена");
+        if (!zone) {throw new Error("Зона не найдена");}
 
         document.getElementById("azBusinessName").value = zone.business_name || "";
         document.getElementById("azDescription").value = zone.description || "";
@@ -150,7 +150,7 @@ async function openEditZone(zoneId) {
 }
 
 async function saveAdvertiserZone() {
-    if (!editingZoneId) return;
+    if (!editingZoneId) {return;}
     const data = {
         business_name: document.getElementById("azBusinessName").value.trim(),
         description: document.getElementById("azDescription").value.trim(),
@@ -165,7 +165,7 @@ async function saveAdvertiserZone() {
             headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
             body: JSON.stringify(data),
         });
-        if (!r.ok) throw new Error((await r.json()).detail || "Ошибка");
+        if (!r.ok) {throw new Error((await r.json()).detail || "Ошибка");}
         closeModals();
         showToast("✅ Зона обновлена", "success");
         loadAdvertiserZones();
@@ -181,12 +181,12 @@ function clearDraw() {
     drawPoint = null;
     drawing = false;
     const map = getMap();
-    if (map) map.off("click", onMapClick);
+    if (map) {map.off("click", onMapClick);}
     hideBanner();
 }
 
 function onMapClick(e) {
-    if (!drawing) return;
+    if (!drawing) {return;}
     drawPoint = e.latlng;
     if (drawLayer) { try { getMap()?.removeLayer(drawLayer); } catch {} drawLayer = null; }
     drawLayer = L.marker(e.latlng, {
@@ -211,12 +211,12 @@ export function openCreateSponsored() {
     document.getElementById("sponsoredName").value = "";
     drawing = true;
     const map = getMap();
-    if (map) map.on("click", onMapClick);
+    if (map) {map.on("click", onMapClick);}
     showBanner("👆 Кликните на карте, чтобы указать место зоны");
 }
 
 function getPlacedPoint() {
-    if (!drawPoint) return null;
+    if (!drawPoint) {return null;}
     return { type: "Point", coordinates: [drawPoint.lng, drawPoint.lat] };
 }
 
@@ -266,7 +266,7 @@ async function loadAdvertiserDashboard() {
     try {
         const token = localStorage.getItem("token");
         const r = await fetch(`${API}/api/advertiser/dashboard`, { headers: { Authorization: `Bearer ${token}` } });
-        if (!r.ok) throw new Error((await r.json()).detail || "Ошибка");
+        if (!r.ok) {throw new Error((await r.json()).detail || "Ошибка");}
         const d = await r.json();
         el.innerHTML = `
             <div class="dashboard-grid">
@@ -297,7 +297,7 @@ async function loadAdvertiserProfile() {
     try {
         const token = localStorage.getItem("token");
         const r = await fetch(`${API}/api/advertiser/profile`, { headers: { Authorization: `Bearer ${token}` } });
-        if (!r.ok) throw new Error((await r.json()).detail || "Ошибка");
+        if (!r.ok) {throw new Error((await r.json()).detail || "Ошибка");}
         const p = await r.json();
         document.getElementById("advProfileBusinessName").value = p.business_name || "";
         document.getElementById("advProfilePhone").value = p.contact_phone || "";
@@ -324,7 +324,7 @@ async function saveAdvertiserProfile() {
             headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
             body: JSON.stringify(data),
         });
-        if (!r.ok) throw new Error((await r.json()).detail || "Ошибка");
+        if (!r.ok) {throw new Error((await r.json()).detail || "Ошибка");}
         closeModals();
         showToast("✅ Профиль бизнеса сохранён", "success");
     } catch (e) {
