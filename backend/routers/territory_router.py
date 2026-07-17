@@ -435,6 +435,16 @@ def my_territories(
     return get_my_territories(db, current_user, limit, offset)
 
 
+@router.post("/api/share")
+def share_territory(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    from services.achievement_service import check_achievements_on_share
+    check_achievements_on_share(db, current_user.id)
+    return {"ok": True}
+
+
 @router.get("/api/achievements")
 def get_achievements(
     db: Session = Depends(get_db),

@@ -614,3 +614,55 @@ class TestAchievements:
         r = client.get("/api/achievements", headers=auth_headers(t))
         assert r.status_code == 200
         assert isinstance(r.json(), list)
+
+    def test_comeback_achievement(self):
+        t = token("ach_cb@test.com")
+        from models import User as UserModel
+        with SessionLocal() as s:
+            user = s.query(UserModel).filter(UserModel.email == "ach_cb@test.com").first()
+            user.is_premium = True
+            s.commit()
+
+        r = capture_ride(t, SQUARE)
+        assert r.status_code == 200
+        r2 = client.get("/api/achievements", headers=auth_headers(t))
+        types1 = [a["type"] for a in r2.json()]
+        assert "comeback" not in types1
+
+        r3 = capture_ride(t, HALF_INSIDE)
+        assert r3.status_code == 200
+        r4 = client.get("/api/achievements", headers=auth_headers(t))
+        types2 = [a["type"] for a in r4.json()]
+        assert "comeback" in types2
+
+    def test_share_achievement(self):
+        t = token("ach_sh@test.com")
+        r = client.post("/api/share", headers=auth_headers(t))
+        assert r.status_code == 200
+
+        r2 = client.get("/api/achievements", headers=auth_headers(t))
+        types = [a["type"] for a in r2.json()]
+        assert "first_share" in types
+
+    def test_area_1_achievement(self):
+        t = token("ach_ar@test.com")
+        from models import User as UserModel
+        with SessionLocal() as s:
+            user = s.query(UserModel).filter(UserModel.email == "ach_ar@test.com").first()
+            user.is_premium = True
+            s.commit()
+
+        # large polygon ~ 1 km²
+        LARGE = [
+            [55.75, 37.60],
+            [55.76, 37.64],
+            [55.74, 37.64],
+            [55.74, 37.60],
+            [55.75, 37.60],
+        ]
+        r = capture_ride(t, LARGE)
+        assert r.status_code == 200
+
+        r2 = client.get("/api/achievements", headers=auth_headers(t))
+        types = [a["type"] for a in r2.json()]
+        assert "area_1" in types

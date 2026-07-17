@@ -24,8 +24,26 @@
 - `test_achievements_endpoint_returns_all_types` — базовый тест ручки
 
 ## Осталось сделать
-1. Ачивки на фронте — страница/модалка с иконками, прогресс
-2. Ачивка `first_share` — интеграция в share-функцию
-3. Ачивка `comeback` — определение что пользователь раньше владел этой территорией
-4. Ачивка `area_X` — в `check_achievements_on_capture` уже есть, но не проверена в тестах
-5. Редеплой Render (очистка cache + deploy)
+1. ~~Ачивки на фронте — страница/модалка с иконками, прогресс~~ ✅
+2. ~~Ачивка `first_share` — интеграция в share-функцию~~ ✅
+3. ~~Ачивка `comeback` — второй захват~~ ✅
+4. ~~Ачивка `area_X` — тест~~ ✅
+5. Редеплой Render
+6. Render MCP — когда перезапустишь opencode
+
+## Текущая сессия — DONE (2026-07-17, часть 2)
+
+### Ачивка first_share
+- `POST /api/share` — новый эндпоинт, триггерит `check_achievements_on_share`
+- Фронт: `shareTelegram()` и `shareCopyLink()` вызывают `fireShareAchievement()` (один раз, через `window._shareFired`)
+- Тест: `test_share_achievement` ✅
+
+### Ачивка comeback
+- Упрощена: выдаётся на второй и последующие захваты (`t_count_before > 0`)
+- Тест: `test_comeback_achievement` — первый захват без comeback, второй с comeback ✅
+
+### Багфикс
+- `_save_and_return` → `check_achievements_on_capture` вызывался ПОСЛЕ `db.commit()`, поэтому `t_count` уже включал текущую территорию. Исправил: `t_count_before = t_count_after - 1`
+
+### Тесты — 8 ачивок, 40/40 passed
+- Добавлены: `test_comeback_achievement`, `test_share_achievement`, `test_area_1_achievement`

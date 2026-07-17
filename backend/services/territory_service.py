@@ -74,6 +74,26 @@ def create_nearby_notifications(db: Session, territory_id, new_geom, current_use
         )
         db.add(notif)
 
+    # Уведомление о захвате территории предыдущему владельцу
+    overlapped_owners = (
+        db.query(Territory.user_id)
+        .filter(
+            Territory.user_id != current_user.id,
+            _active_territories(),
+            func.ST_Intersects(Territory.polygon, new_geom),
+        )
+        .distinct()
+        .all()
+    )
+    for (uid,) in overlapped_owners:
+        notif = Notification(
+            user_id=uid,
+            type="captured",
+            message=f"💥 {current_user.username} захватил часть вашей территории!",
+            territory_id=territory_id,
+        )
+        db.add(notif)
+
 
 def get_territories_in_bbox(db: Session, north: float, south: float, east: float, west: float, limit: int = 100, offset: int = 0):
     """Возвращает территории в bounding box. Использует ST_MakeEnvelope вместо строковой сборки."""

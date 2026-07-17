@@ -22,18 +22,22 @@ def _unlock(user_id, achievement_type, db) -> bool:
     return True
 
 
-def check_achievements_on_capture(db: Session, user_id, new_area: float, sponsored_rewards: list, previous_owner_id=None):
+def check_achievements_on_capture(db: Session, user_id, new_area: float, sponsored_rewards: list):
     user = db.query(User).filter(User.id == user_id).first()
     if not user:
         return
 
+    # territories count INCLUDES the current capture (called after commit)
+    t_count_after = db.query(func.count(Territory.id)).filter(Territory.user_id == user_id).scalar() or 0
+    t_count_before = t_count_after - 1
+
     # first_capture
-    _unlock(user_id, "first_capture", db)
+    if t_count_before == 0:
+        _unlock(user_id, "first_capture", db)
 
     # territories_X
-    t_count = db.query(func.count(Territory.id)).filter(Territory.user_id == user_id).scalar() or 0
     for thresh, ach in [(5, "territories_5"), (10, "territories_10"), (25, "territories_25")]:
-        if t_count >= thresh:
+        if t_count_after >= thresh:
             _unlock(user_id, ach, db)
 
     # area_X
@@ -47,17 +51,9 @@ def check_achievements_on_capture(db: Session, user_id, new_area: float, sponsor
     if sponsored_rewards:
         _unlock(user_id, "sponsored_capture", db)
 
-    # comeback
-    if previous_owner_id and str(previous_owner_id) != str(user_id):
-        # проверяем, что этот пользователь раньше владел этой территорией (любой)
-        prev_owned = db.query(Territory).filter(
-            Territory.user_id == user_id,
-            Territory.id.in_(
-                db.query(Territory.id).filter(Territory.user_id == previous_owner_id)
-            ),
-        ).first()
-        if prev_owned:
-            _unlock(user_id, "comeback", db)
+    # comeback — второй и последующие захваты
+    if t_count_before > 0:
+        _unlock(user_id, "comeback", db)
 
 
 def check_achievements_on_premium(db: Session, user_id):
@@ -97,12 +93,10 @@ def get_achievements_with_progress(db: Session, user_id) -> list:
     )
     unlocked_set = {r[0] for r in unlocked_set}
 
-    # current stats
     t_count = db.query(func.count(Territory.id)).filter(Territory.user_id == user_id).scalar() or 0
     total_area = db.query(func.coalesce(func.sum(Territory.area), 0)).filter(Territory.user_id == user_id).scalar() or 0
     total_area_km2 = total_area / 1_000_000
 
-    # прогресс для типов с порогами
     progress_map = {
         "territories_5": min(t_count / 5, 1),
         "territories_10": min(t_count / 10, 1),
@@ -119,10 +113,6 @@ def get_achievements_with_progress(db: Session, user_id) -> list:
         "area_10": f"{total_area_km2:.1f}/10 км²",
         "area_100": f"{total_area_km2:.1f}/100 км²",
     }
-
-    unlocked_types = [r[0] for r in db.query(UserAchievement.achievement_type).filter(
-        UserAchievement.user_id == user_id
-    ).all()]
 
     result = []
     for ach_type, title in ACHIEVEMENT_TYPES.items():

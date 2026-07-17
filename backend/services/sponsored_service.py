@@ -6,7 +6,7 @@ from geoalchemy2.shape import from_shape, to_shape
 from shapely.geometry import shape as shapely_shape
 from shapely.geometry import mapping
 
-from models import SponsoredTerritory, UserBalance, Transaction, User, AdvertiserProfile
+from models import SponsoredTerritory, UserBalance, Transaction, User, AdvertiserProfile, Notification
 from config import settings
 
 
@@ -141,6 +141,18 @@ def process_capture_rewards(db: Session, territory_polygon, capturing_user: User
             "monthly_budget_rub": zone.monthly_budget_rub,
             "your_share_monthly_rub": int(zone.monthly_budget_rub * REVENUE_SHARE),
         })
+
+    # Уведомление рекламодателю о захвате
+    applied_notif_to = set()
+    for zone in sponsored_zones:
+        if zone.owner_id and zone.owner_id != capturing_user.id and zone.owner_id not in applied_notif_to:
+            applied_notif_to.add(zone.owner_id)
+            notif = Notification(
+                user_id=zone.owner_id,
+                type="sponsored_captured",
+                message=f"🎯 {capturing_user.username} захватил твою спонсорскую зону!",
+            )
+            db.add(notif)
 
     return rewards
 

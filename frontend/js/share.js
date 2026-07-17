@@ -1,5 +1,6 @@
 import { openModal, showToast } from './ui.js';
 import { API } from './config.js';
+import { authHeaders } from './auth.js';
 
 let lastSharedTerritory = null;
 let lastRewards = null;
@@ -51,6 +52,7 @@ export async function shareTelegram() {
     }
     text += `\n\n🚴 Присоединяйся и получай бонус!`;
     window.open(`https://t.me/share/url?url=${encodeURIComponent(shareUrl)}&text=${encodeURIComponent(text)}`, '_blank');
+    fireShareAchievement();
 }
 
 export function shareCopyLink() {
@@ -59,4 +61,12 @@ export function shareCopyLink() {
     navigator.clipboard.writeText(url).then(() => {
         showToast("🔗 Ссылка скопирована!", "success");
     });
+    fireShareAchievement();
+}
+
+function fireShareAchievement() {
+    if (!window._shareFired) {
+        window._shareFired = true;
+        fetch(`${API}/api/share`, { method: "POST" });
+    }
 }
