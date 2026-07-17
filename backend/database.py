@@ -108,7 +108,11 @@ def _fix_column_type(table: str, column: str, new_type: str):
         expected = new_type.split()[0].lower()
         if current == expected:
             return  # уже правильный тип
-        conn.execute(text(f"ALTER TABLE {table} ALTER COLUMN {column} TYPE {new_type} USING {column}::boolean"))
+        new_type_clean = new_type.split()[0]
+        default_clause = new_type[len(new_type_clean):].strip()
+        conn.execute(text(f"ALTER TABLE {table} ALTER COLUMN {column} TYPE {new_type_clean} USING {column}::boolean"))
+        if default_clause:
+            conn.execute(text(f"ALTER TABLE {table} ALTER COLUMN {column} SET {default_clause}"))
         conn.commit()
         logger.info("Fixed column type %s.%s: %s → %s", table, column, current, new_type)
 
