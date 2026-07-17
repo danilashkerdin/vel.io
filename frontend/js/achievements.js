@@ -17,28 +17,6 @@ const ACHIEVEMENT_ICONS = {
     first_share: "🔗",
 };
 
-export function renderAchievements(data) {
-    const unlocked = [];
-    const locked = [];
-    for (const a of data) {
-        if (a.unlocked) {
-            unlocked.push(a);
-        } else {
-            locked.push(a);
-        }
-    }
-    const html = [];
-    if (unlocked.length) {
-        html.push(`<div class="ach-section-title">Получено</div>`);
-        html.push(`<div class="ach-grid">${unlocked.map(renderAchievement).join("")}</div>`);
-    }
-    if (locked.length) {
-        html.push(`<div class="ach-section-title">Доступные</div>`);
-        html.push(`<div class="ach-grid">${locked.map(renderAchievement).join("")}</div>`);
-    }
-    return html.join("");
-}
-
 export async function loadAchievements() {
     const content = document.getElementById("achievementsContent");
     content.innerHTML = "Загрузка...";

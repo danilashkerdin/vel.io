@@ -5,12 +5,12 @@ import { editTerritory, saveTerritory, setTerritoriesData } from './editor.js';
 import { showShareModal, shareTelegram, shareCopyLink } from './share.js';
 import { loadLeaderboard, loadMyTerritories, initLeaderboard } from './leaderboard.js';
 import { loadNotifications, readAll } from './notifications.js';
-import { openModal, closeModals, showToast, openActionSheet, closeActionSheet } from './ui.js';
+import { toggleMenu, closeMenu, openModal, closeModals, showToast } from './ui.js';
 import { deleteTerritory, createStarInvoice, fetchPremiumStatus } from './api.js';
 import { isTelegramWebApp, waitForTelegram, applyTelegramTheme, tryTelegramAuth } from './telegram.js';
 import { initAdvertiser, updateAdvertiserUI, isAdvertiser, openCreateSponsored } from './advertiser.js';
 import { initRecorder, isRecording, startRecording } from './recorder.js';
-import { initPlanner, startPlanner, stopPlanner } from './planner.js';
+import { initPlanner, startPlanner, isPlannerActive, stopPlanner } from './planner.js';
 import { loadActivity, setFlyToHandler } from './activity.js';
 import { showUserProfile } from './profile.js';
 import { loadAchievements } from './achievements.js';
@@ -66,252 +66,275 @@ async function refreshPremiumStatus() {
     } catch (e) {}
 }
 
+function updatePremiumMenu() {
+    const menuPremium = document.getElementById("menuPremium");
+    if (isPremium()) {
+        menuPremium.innerHTML = "⭐ Премиум активен";
+        menuPremium.className = "menu-item";
+    } else {
+        menuPremium.innerHTML = "⭐ Купить Premium";
+        menuPremium.className = "menu-item menu-premium";
+    }
+}
+
 // ─── Баланс / Доход ───
 
-async function loadBalance(contentId) {
-    const c = document.getElementById(contentId || "atabIncome");
-    c.innerHTML = "Загрузка...";
+async function loadBalance() {
+    const content = document.getElementById("balanceContent");
+    content.innerHTML = "Загрузка...";
+
     try {
         const { API } = await import('./config.js');
         const headers = { Authorization: `Bearer ${localStorage.getItem("token")}` };
+
         const [balRes, txRes] = await Promise.all([
             fetch(`${API}/api/balance`, { headers }),
             fetch(`${API}/api/transactions?limit=5`, { headers }),
         ]);
-        if (!balRes.ok) { const e = await balRes.json().catch(()=>({})); c.innerHTML = `<p style="color:var(--color-danger);">${e.detail || 'error'}</p>`; return; }
+        if (!balRes.ok) { const err = await balRes.json().catch(()=>({})); content.innerHTML = `<p style="color:var(--color-danger);">${err.detail || 'Ошибка загрузки'}</p>`; return; }
+
         const data = await balRes.json();
         const txns = txRes.ok ? await txRes.json() : [];
-        let html = `<div style="text-align:center;padding:12px 0;"><div class="balance-amount">${data.balance_rub}₽</div><div class="balance-label">Доступно для вывода</div><div style="font-size:11px;color:var(--color-text-light);">Всего заработано: ${data.total_earned_rub}₽</div></div>`;
-        if (data.sponsored_territories?.length) {
-            html += `<div style="font-weight:600;margin:12px 0 6px;font-size:13px;">🏪 Мои спонсорские зоны</div>${data.sponsored_territories.map(s => `<div style="display:flex;align-items:center;gap:6px;padding:8px 10px;background:rgba(255,215,0,0.05);border:1px solid rgba(255,215,0,0.15);border-radius:8px;margin-bottom:4px;"><div style="width:8px;height:8px;border-radius:50%;background:${s.color};flex-shrink:0;"></div><div style="flex:1;font-size:12px;">${s.business_name}</div><div style="font-size:11px;color:var(--color-primary);font-weight:500;">+${s.your_share_monthly_rub}₽/мес</div></div>`).join('')}`;
+
+        let html = `
+            <div style="text-align:center;padding:12px 0;">
+                <div class="balance-amount">${data.balance_rub}₽</div>
+                <div class="balance-label">Доступно для вывода</div>
+                <div style="font-size:11px;color:var(--color-text-light);">Всего заработано: ${data.total_earned_rub}₽</div>
+            </div>
+        `;
+
+        // Спонсорские территории
+        if (data.sponsored_territories && data.sponsored_territories.length > 0) {
+            html += `
+                <div style="font-weight:600;margin:12px 0 6px;font-size:13px;">🏪 Мои спонсорские зоны</div>
+                ${data.sponsored_territories.map(s => `
+                    <div style="display:flex;align-items:center;gap:6px;padding:8px 10px;background:rgba(255,215,0,0.05);border:1px solid rgba(255,215,0,0.15);border-radius:8px;margin-bottom:4px;">
+                        <div style="width:8px;height:8px;border-radius:50%;background:${s.color};flex-shrink:0;"></div>
+                        <div style="flex:1;font-size:12px;">${s.business_name}</div>
+                        <div style="font-size:11px;color:var(--color-primary);font-weight:500;">+${s.your_share_monthly_rub}₽/мес</div>
+                    </div>
+                `).join('')}
+            `;
         }
-        if (data.balance_rub >= 500) { html += `<button id="requestPayoutBtnTab" class="btn btn-primary" style="width:100%;margin-top:8px;">💰 Запросить выплату ${data.balance_rub}₽</button>`; }
-        else if (data.balance_rub > 0) { html += `<div style="text-align:center;font-size:12px;color:var(--color-text-light);margin-top:12px;">Минимум для вывода — 500₽</div>`; }
-        c.innerHTML = html;
-        const w = document.getElementById("requestPayoutBtnTab");
-        if (w) { w.onclick = async () => { if (!confirm(`Запросить выплату ${data.balance_rub}₽?`)) {return;} const r = await fetch(`${API}/api/payment/request-payout`, { method: "POST", headers }); if (r.ok) { showToast("💸 Запрос отправлен!"); loadBalance(contentId); } else { const e = await r.json(); showToast(e.detail || "Ошибка", "error"); } }; }
-    } catch (e) { c.innerHTML = `<p style="color:var(--color-danger);">${e.message || 'error'}</p>`; }
+
+        // Выплаты
+        if (data.balance_rub >= 500) {
+            html += `
+                <div style="font-weight:600;margin:12px 0 6px;font-size:13px;">💸 Вывести средства</div>
+                <button id="requestPayoutBtn" class="btn btn-primary">💰 Запросить выплату ${data.balance_rub}₽</button>
+            `;
+        } else if (data.balance_rub > 0) {
+            html += `<div style="text-align:center;font-size:12px;color:var(--color-text-light);margin-top:12px;">Минимум для вывода — 500₽</div>`;
+        }
+
+        // История
+        if (txns.length > 0) {
+            html += `<div style="font-weight:600;margin:12px 0 6px;font-size:13px;">📜 Последние операции</div>`;
+            html += txns.map(t => `
+                <div style="display:flex;justify-content:space-between;padding:5px 0;font-size:12px;border-bottom:1px solid var(--color-border);">
+                    <span style="color:var(--color-text-muted);">${t.description}</span>
+                    <span style="font-weight:500;color:${t.amount_rub > 0 ? 'var(--color-primary)' : 'var(--color-danger)'};">${t.amount_rub > 0 ? '+' : ''}${t.amount_rub}₽</span>
+                </div>
+            `).join('');
+        }
+
+        content.innerHTML = html;
+
+        // Event listeners
+        const withdrawBtn = document.getElementById("requestPayoutBtn");
+        if (withdrawBtn) {
+            withdrawBtn.onclick = async () => {
+                if (!confirm(`Запросить выплату ${data.balance_rub}₽? Администратор обработает запрос.`)) {return;}
+                const r = await fetch(`${API}/api/payment/request-payout`, { method: "POST", headers });
+                if (r.ok) { showToast("💸 Запрос на выплату отправлен администратору!", "success"); loadBalance(); }
+                else { const e = await r.json(); showToast(e.detail || "Ошибка", "error"); }
+            };
+        }
+
+    } catch (e) {
+        content.innerHTML = `<p style="color:var(--color-danger);">${e.message || 'Ошибка загрузки'}</p>`;
+    }
 }
+
+// ─── Реферальная система ───
+
+let _referralLink = "";
 
 async function loadReferralLink() {
     try {
         const { API } = await import('./config.js');
         const headers = { Authorization: `Bearer ${localStorage.getItem("token")}` };
         const res = await fetch(`${API}/api/referral/link`, { headers });
-        if (res.ok) { const data = await res.json(); document.getElementById("referralLinkBox").textContent = data.link; }
-        else { throw new Error("fail"); }
+        if (res.ok) {
+            const data = await res.json();
+            _referralLink = data.link;
+            document.getElementById("referralLinkBox").textContent = _referralLink;
+        } else {
+            throw new Error("Не удалось получить реферальную ссылку");
+        }
     } catch (e) {
         const user = getUser();
-        document.getElementById("referralLinkBox").textContent = user?.id ? `${window.location.origin}/?ref=${user.id}` : window.location.origin;
+        _referralLink = user?.id ? `${window.location.origin}/?ref=${user.id}` : window.location.origin;
+        document.getElementById("referralLinkBox").textContent = _referralLink;
     }
 }
 
 function copyReferralLink() {
-    const box = document.getElementById("referralLinkBox");
-    if (!box?.textContent) {return;}
-    navigator.clipboard.writeText(box.textContent).then(() => showToast("📋 Ссылка скопирована!", "success"));
+    if (!_referralLink) {return;}
+    navigator.clipboard.writeText(_referralLink).then(() => {
+        showToast("📋 Ссылка скопирована!", "success");
+    });
 }
 
 function shareReferralTelegram() {
-    const link = document.getElementById("referralLinkBox")?.textContent;
-    if (!link) {return;}
-    window.open(`https://t.me/share/url?url=${encodeURIComponent(link)}&text=${encodeURIComponent("🚴 Захватывай территории на Velo.io! "+link)}`, '_blank');
-}
-
-// ─── Switch main tabs ───
-
-function switchToTab(name) {
-    document.querySelectorAll(".tab-btn").forEach(b => b.classList.toggle("active", b.dataset.tab === name));
-    document.querySelectorAll(".tab-page").forEach(p => p.style.display = "none");
-    const pageId = "tab" + name.charAt(0).toUpperCase() + name.slice(1);
-    const page = document.getElementById(pageId);
-    if (page) { page.style.display = "flex"; }
-    document.getElementById("map").style.display = name === "map" ? "block" : "none";
-    document.getElementById("fabBtn").style.display = name === "map" ? "flex" : "none";
-    document.getElementById("actionSheet").classList.remove("open");
-}
-
-// ─── Activity sub-tabs ───
-
-function switchActivityTab(name) {
-    document.querySelectorAll(".atab-btn").forEach(b => b.classList.toggle("active", b.dataset.atab === name));
-    document.querySelectorAll(".atab-content").forEach(c => c.classList.toggle("active", c.dataset.atab === name));
-    if (name === "achievements") { loadAchievementsContent(); }
-    else if (name === "income") { loadBalance("atabIncome"); }
-    else if (name === "territories") { loadMyTerritoriesTab(); }
-    else if (name === "feed") { loadActivityContent(); }
-    else if (name === "leaderboard") { document.getElementById("leaderboardContent").innerHTML = "Загрузка..."; loadLeaderboard(); }
-}
-
-async function loadAchievementsContent() {
-    const c = document.getElementById("atabAchievements");
-    c.innerHTML = "Загрузка...";
-    try {
-        const { API } = await import('./config.js');
-        const headers = { Authorization: `Bearer ${localStorage.getItem("token")}` };
-        const res = await fetch(`${API}/api/achievements/all`, { headers });
-        if (!res.ok) { c.innerHTML = "Ошибка"; return; }
-        const { renderAchievements } = await import('./achievements.js');
-        c.innerHTML = renderAchievements(await res.json());
-    } catch { c.innerHTML = "Ошибка"; }
-}
-
-async function loadMyTerritoriesTab() {
-    const c = document.getElementById("atabTerritories");
-    c.innerHTML = "Загрузка...";
-    try {
-        const { API } = await import('./config.js');
-        const headers = { Authorization: `Bearer ${localStorage.getItem("token")}` };
-        const res = await fetch(`${API}/api/my-territories?limit=100`, { headers });
-        if (!res.ok) { c.innerHTML = "Ошибка"; return; }
-        const data = await res.json();
-        if (!data.length) { c.innerHTML = '<div style="text-align:center;padding:20px;color:var(--color-text-muted);">Нет территорий</div>'; return; }
-        c.innerHTML = data.map(t => {
-            const expires = t.expires_at ? timeLeft(new Date(t.expires_at)) : "";
-            return `<div style="display:flex;align-items:center;gap:10px;padding:10px;border-bottom:1px solid var(--color-border);font-size:13px;">
-                <div style="width:10px;height:10px;border-radius:50%;background:${t.color || '#4CAF50'};flex-shrink:0;"></div>
-                <div style="flex:1;"><div>${escapeHtml(t.name)}</div><div style="font-size:11px;color:var(--color-text-muted);">${(t.area/1000000).toFixed(2)} км² · ${expires}</div></div>
-            </div>`;
-        }).join("");
-    } catch { c.innerHTML = "Ошибка"; }
-}
-
-function timeLeft(date) {
-    const diff = date - new Date();
-    if (diff <= 0) { return "истекла"; }
-    const days = Math.floor(diff / 86400000);
-    const hours = Math.floor((diff % 86400000) / 3600000);
-    return `${days}д ${hours}ч`;
-}
-
-function escapeHtml(s) {
-    if (!s) {return "";}
-    const d = document.createElement("div");
-    d.textContent = s;
-    return d.innerHTML;
-}
-
-async function loadActivityContent() {
-    const c = document.getElementById("atabFeed");
-    c.innerHTML = "Загрузка...";
-    try {
-        const { API } = await import('./config.js');
-        const res = await fetch(`${API}/api/activity?limit=20`);
-        if (!res.ok) { c.innerHTML = "Ошибка"; return; }
-        const data = await res.json();
-        if (!data.length) { c.innerHTML = '<div style="text-align:center;padding:20px;color:var(--color-text-muted);">Пока ничего</div>'; return; }
-        c.innerHTML = data.map(a => {
-            const ts = new Date(a.created_at);
-            const timeAgo = Math.round((Date.now() - ts) / 60000);
-            const label = timeAgo < 1 ? "только что" : timeAgo < 60 ? `${timeAgo} мин назад` : `${Math.floor(timeAgo / 60)} ч назад`;
-            return `<div style="display:flex;align-items:center;gap:10px;padding:10px;border-bottom:1px solid var(--color-border);font-size:13px;">
-                <div style="font-size:24px;">🚴</div>
-                <div style="flex:1;"><strong>${escapeHtml(a.username)}</strong> захватил ${(a.area/1000000).toFixed(2)} км²</div>
-                <div style="font-size:11px;color:var(--color-text-muted);">${label}</div>
-            </div>`;
-        }).join("");
-    } catch { c.innerHTML = "Ошибка"; }
+    if (!_referralLink) {return;}
+    const text = `🚴 Захватывай территории на Velo.io! Я уже там. Переходи по ссылке:\n${_referralLink}`;
+    window.open(`https://t.me/share/url?url=${encodeURIComponent(_referralLink)}&text=${encodeURIComponent(text)}`, '_blank');
 }
 
 // ─── Init ───
 
 document.addEventListener("DOMContentLoaded", async () => {
+    // Telegram Mini App: логин через initData
     const isTG = isTelegramWebApp();
     if (isTG) {
+        // Ждём SDK (загружается асинхронно)
         await waitForTelegram();
         applyTelegramTheme();
         const auth = await tryTelegramAuth();
         if (!auth) {
-            document.body.innerHTML = '<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100dvh;padding:24px;background:#0a0a1a;color:#fff;text-align:center;"><div style="font-size:48px;margin-bottom:16px;">🚴</div><h2 style="font-family:\'Space Grotesk\',sans-serif;margin-bottom:8px;">Velo.io</h2><p style="color:var(--color-text-muted);font-size:14px;margin-bottom:24px;">Не удалось авторизоваться</p><button onclick="window.Telegram?.WebApp?.close()" style="padding:14px 24px;background:var(--gradient-primary);border:none;border-radius:12px;color:#0a0a1a;font-weight:700;font-size:14px;cursor:pointer;">Закрыть</button></div>';
+            // В Mini App не редиректим на auth.html — показываем inline-ошибку
+            document.body.innerHTML = `
+                <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100dvh;padding:24px;background:#0a0a1a;color:#fff;text-align:center;">
+                    <div style="font-size:48px;margin-bottom:16px;">🚴</div>
+                    <h2 style="font-family:'Space Grotesk',sans-serif;margin-bottom:8px;">Velo.io</h2>
+                    <p style="color:var(--color-text-muted);font-size:14px;margin-bottom:24px;">Не удалось авторизоваться. Попробуй открыть через Menu Button бота <strong>@vel_io_bot</strong>.</p>
+                    <button onclick="window.Telegram?.WebApp?.close()" style="padding:14px 24px;background:var(--gradient-primary);border:none;border-radius:12px;color:#0a0a1a;font-weight:700;font-size:14px;cursor:pointer;">Закрыть</button>
+                </div>
+            `;
             return;
         }
     } else {
         requireAuth();
     }
 
-    if (new URLSearchParams(window.location.search).get("premium") === "success") {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("premium") === "success") {
         await refreshPremiumStatus();
         showToast("⭐ Премиум активирован!", "success");
         window.history.replaceState({}, "", window.location.pathname);
     }
-
     const user = getUser();
-    document.getElementById("profileUsername").textContent = user?.username || "";
+    document.getElementById("menuUsername").textContent = user.username || "";
+    const freeLimit = user.free_limit || 1;
+    const bonuses = user.referral_bonuses || 0;
+    const limitEl = document.getElementById("premiumFreeLimit");
+    if (limitEl) {
+        limitEl.textContent = freeLimit;
+        if (bonuses > 0) {
+            limitEl.textContent += ` (+${bonuses} за рефералов)`;
+        }
+    }
 
-    // Main tab switching
-    document.querySelectorAll(".tab-btn").forEach(btn => {
-        btn.onclick = () => switchToTab(btn.dataset.tab);
-    });
-
-    // Activity sub-tabs
-    document.querySelectorAll(".atab-btn").forEach(btn => {
-        btn.onclick = () => switchActivityTab(btn.dataset.atab);
-    });
-
-    // Init
     initMap();
     setupUpload();
-    initLeaderboard();
-    initRecorder();
-    initPlanner();
+    updatePremiumMenu();
     initAdvertiser();
-    loadNotifications();
+    initRecorder();
+    initLeaderboard();
+    initPlanner();
 
-    // FAB / bottom sheet
-    document.getElementById("fabBtn").onclick = async () => {
-        if (isAdvertiser()) { openCreateSponsored(); return; }
-        if (isRecording()) { const { stopAndCapture } = await import('./recorder.js'); stopAndCapture(); return; }
-        openActionSheet();
-    };
-    document.getElementById("bsOverlay").onclick = closeActionSheet;
-    document.getElementById("bsRecordBtn").onclick = () => { closeActionSheet(); startRecording(); };
-    document.getElementById("bsUploadBtn").onclick = () => { closeActionSheet(); openModal("uploadModal"); };
-    document.getElementById("bsPlannerBtn").onclick = () => { closeActionSheet(); startPlanner(); };
-
-    // Profile list
-    document.getElementById("pfPremium").onclick = () => { 
-        if (isPremium()) { showToast("⭐ Премиум уже активен", "success"); }
-        else { openModal("premiumModal"); }
-    };
-    document.getElementById("pfReferral").onclick = () => { openModal("referralModal"); loadReferralLink(); };
-    document.getElementById("pfContacts").onclick = () => { openModal("contactsModal"); };
-    document.getElementById("pfNotifications").onclick = () => { openModal("notificationsModal"); loadNotifications(); };
-    document.getElementById("pfLogout").onclick = logout;
-
-    // Activity tab: load feed by default on first switch to it
-    document.querySelector('.tab-btn[data-tab="activity"]').onclick = () => {
-        switchToTab("activity");
-        if (!document.getElementById("atabFeed").innerHTML.trim() || document.getElementById("atabFeed").innerHTML === "Загрузка...") {
-            switchActivityTab("feed");
+    if (!localStorage.getItem("onboarding_done")) {
+        setTimeout(() => openModal("onboardingModal"), 300);
+        const finishOnboarding = () => {
+            closeModals();
+            localStorage.setItem("onboarding_done", "1");
+        };
+        document.getElementById("startBtn").onclick = finishOnboarding;
+    }
+    setFlyToHandler(async (id, polygon) => {
+        closeModals();
+        const map = (await import('./map.js')).getMap();
+        if (map && polygon) {
+            try {
+                const bounds = L.geoJSON(polygon).getBounds();
+                map.fitBounds(bounds, { padding: [50, 50], maxZoom: 16 });
+            } catch {}
         }
-    };
+    });
 
-    // Modal bindings
-    document.querySelectorAll(".modal-close").forEach(b => b.onclick = closeModals);
-    document.querySelectorAll(".modal").forEach(m => m.onclick = e => { if (e.target === m) { closeModals(); }});
-    document.getElementById("overlay").onclick = closeModals;
+    document.getElementById("burgerBtn").onclick = toggleMenu;
+    document.getElementById("closeMenuBtn").onclick = closeMenu;
+    document.getElementById("overlay").onclick = () => { closeMenu(); closeModals(); };
+    document.getElementById("fabBtn").onclick = async () => {
+        closeMenu();
+        if (isRecording()) {
+            const { stopAndCapture } = await import('./recorder.js');
+            stopAndCapture();
+            return;
+        }
+        if (isAdvertiser()) {openCreateSponsored();}
+        else {startRecording();}
+    };
+    document.getElementById("menuUploadBtn").onclick = () => { closeMenu(); openModal("uploadModal"); };
+    document.getElementById("menuPlannerBtn").onclick = () => { closeMenu(); startPlanner(); };
+    document.getElementById("menuActivity").onclick = () => { closeMenu(); openModal("activityModal"); loadActivity(); };
+    document.getElementById("menuLeaderboard").onclick = () => { closeMenu(); openModal("leaderboardModal"); loadLeaderboard(); };
+    document.getElementById("menuPremium").onclick = () => {
+        closeMenu();
+        if (isPremium()) {showToast("⭐ Премиум уже активен", "success");}
+        else {openModal("premiumModal");}
+    };
+    document.getElementById("menuBalance").onclick = () => { closeMenu(); openModal("balanceModal"); loadBalance(); };
+    document.getElementById("menuAchievements").onclick = () => { closeMenu(); openModal("achievementsModal"); loadAchievements(); };
+    document.getElementById("menuReferral").onclick = () => { closeMenu(); openModal("referralModal"); loadReferralLink(); };
+    document.getElementById("menuContacts").onclick = () => { closeMenu(); openModal("contactsModal"); };
+    document.getElementById("menuLogout").onclick = logout;
     document.getElementById("saveEditBtn").onclick = saveTerritory;
+    document.getElementById("menuMyTerritories").onclick = () => { closeMenu(); openModal("myTerritoriesModal"); loadMyTerritories(); };
+    document.getElementById("menuNotifications").onclick = () => { closeMenu(); openModal("notificationsModal"); loadNotifications(); };
+    document.getElementById("readAllBtn").onclick = readAll;
     document.getElementById("buyPremiumBtn").onclick = handleBuyPremium;
     document.getElementById("shareTelegramBtn").onclick = shareTelegram;
     document.getElementById("shareCopyBtn").onclick = shareCopyLink;
     document.getElementById("copyReferralBtn").onclick = copyReferralLink;
     document.getElementById("shareReferralTelegram").onclick = shareReferralTelegram;
-    document.getElementById("readAllBtn").onclick = readAll;
 
-    // Notification polling
-    setInterval(loadNotifications, 60000);
-    document.addEventListener("visibilitychange", () => { if (!document.hidden) { loadNotifications(); } });
+    let notifInterval = null;
+    function startNotifPolling() {
+        if (notifInterval) {return;}
+        notifInterval = setInterval(loadNotifications, 60000);
+    }
+    function stopNotifPolling() {
+        if (notifInterval) { clearInterval(notifInterval); notifInterval = null; }
+    }
+    loadNotifications();
+    startNotifPolling();
+    document.addEventListener("visibilitychange", () => {
+        if (document.hidden) {stopNotifPolling();}
+        else { loadNotifications(); startNotifPolling(); }
+    });
 
-    // Service worker
+    document.querySelectorAll(".modal-close").forEach(b => b.onclick = closeModals);
+    document.querySelectorAll(".modal").forEach(m => m.onclick = e => { if (e.target === m) {closeModals();} });
+
     if ('serviceWorker' in navigator) {
         window.addEventListener('load', () => {
-            navigator.serviceWorker.register('/sw.js').catch(() => {});
+            navigator.serviceWorker.register('/sw.js')
+                .then((reg) => {
+                    console.log('[SW] Registered with scope:', reg.scope);
+                    reg.addEventListener('updatefound', () => {
+                        const newWorker = reg.installing;
+                        if (!newWorker) {return;}
+                        newWorker.addEventListener('statechange', () => {
+                            if (newWorker.state === 'activated' && navigator.serviceWorker.controller) {
+                                showToast("🔄 Обновление загружено. Обновите страницу.", "success");
+                            }
+                        });
+                    });
+                })
+                .catch((err) => console.warn('[SW] Registration failed:', err));
         });
-    }
-
-    // Onboarding
-    if (!localStorage.getItem("onboarding_done")) {
-        setTimeout(() => openModal("onboardingModal"), 300);
-        document.getElementById("startBtn").onclick = () => { closeModals(); localStorage.setItem("onboarding_done", "1"); };
     }
 });
