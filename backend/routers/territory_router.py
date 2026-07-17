@@ -203,10 +203,12 @@ async def plan_route(body: PlanRouteRequest):
     elif geom["type"] == "MultiPolygon":
         simplified = geom["coordinates"][0][0][::max(1, len(geom["coordinates"][0][0]) // 50)]
 
+    route_result = [[float(p[0]), float(p[1]), float(p[2])] for p in pts]
+
     return {
-        "polygon": result["geometry"],
+        "polygon": geom,
         "area": result["area_sqm"],
-        "route": pts,
+        "route": route_result,
         "simplified_polygon": simplified,
     }
 
