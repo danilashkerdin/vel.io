@@ -10,6 +10,7 @@ import { deleteTerritory, createStarInvoice, fetchPremiumStatus } from './api.js
 import { isTelegramWebApp, waitForTelegram, applyTelegramTheme, tryTelegramAuth } from './telegram.js';
 import { initAdvertiser, updateAdvertiserUI, isAdvertiser, openCreateSponsored } from './advertiser.js';
 import { initRecorder, isRecording, startRecording } from './recorder.js';
+import { initPlanner, startPlanner, isPlannerActive, stopPlanner } from './planner.js';
 import { loadActivity, setFlyToHandler } from './activity.js';
 import { showUserProfile } from './profile.js';
 
@@ -241,6 +242,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     initAdvertiser();
     initRecorder();
     initLeaderboard();
+    initPlanner();
 
     if (!localStorage.getItem("onboarding_done")) {
         setTimeout(() => openModal("onboardingModal"), 300);
@@ -275,6 +277,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         else {startRecording();}
     };
     document.getElementById("menuUploadBtn").onclick = () => { closeMenu(); openModal("uploadModal"); };
+    document.getElementById("menuPlannerBtn").onclick = () => { closeMenu(); startPlanner(); };
     document.getElementById("menuActivity").onclick = () => { closeMenu(); openModal("activityModal"); loadActivity(); };
     document.getElementById("menuLeaderboard").onclick = () => { closeMenu(); openModal("leaderboardModal"); loadLeaderboard(); };
     document.getElementById("menuPremium").onclick = () => {

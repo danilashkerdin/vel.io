@@ -152,6 +152,59 @@ async def capture_ride(
     return _save_and_return(result, db, current_user, "Поездка", using_bonus)
 
 
+class PlanRouteRequest(BaseModel):
+    points: list[list[float]]  # [[lat, lng], ...]
+
+
+@router.post("/api/plan-route")
+async def plan_route(body: PlanRouteRequest):
+    """Строит маршрут через OSRM по точкам и возвращает polyline + polygon территории."""
+    if len(body.points) < 2:
+        raise HTTPException(400, "Минимум 2 точки")
+
+    # Нормализуем в формат [lat, lng, 0]
+    pts = [(p[0], p[1], 0) for p in body.points]
+
+    # Пробуем построить маршрут через OSRM
+    import httpx
+    coords = ";".join(f"{p[1]},{p[0]}" for p in body.points)  # lon,lat for OSRM
+    osrm_url = f"https://router.project-osrm.org/route/v1/cycling/{coords}?overview=full&geometries=geojson"
+    try:
+        r = await httpx.AsyncClient().get(osrm_url, timeout=15)
+        if r.status_code == 200:
+            data = r.json()
+            if data.get("code") == "Ok" and data["routes"]:
+                route_pts = data["routes"][0]["geometry"]["coordinates"]
+                # OSRM returns [lon, lat], convert to [lat, lng, 0]
+                pts = [(p[1], p[0], 0) for p in route_pts]
+    except Exception as e:
+        logger.warning("OSRM route failed, using straight lines: %s", e)
+
+    # Замыкаем: последняя точка → первая, если не замкнуто
+    if pts and (abs(pts[0][0] - pts[-1][0]) > 0.0001 or abs(pts[0][1] - pts[-1][1]) > 0.0001):
+        pts.append(pts[0])
+
+    # Прогоняем через pipeline для детекции замыкания
+    result = await asyncio.to_thread(pipeline.process_raw_points, pts)
+    if not result["success"]:
+        raise HTTPException(400, "Маршрут не образует замкнутую область")
+
+    from shapely.geometry import mapping as shp_mapping
+    geom = shp_mapping(result["geometry"])
+    simplified = []
+    if geom["type"] == "Polygon":
+        simplified = geom["coordinates"][0][::max(1, len(geom["coordinates"][0]) // 50)]
+    elif geom["type"] == "MultiPolygon":
+        simplified = geom["coordinates"][0][0][::max(1, len(geom["coordinates"][0][0]) // 50)]
+
+    return {
+        "polygon": result["geometry"],
+        "area": result["area_sqm"],
+        "route": pts,
+        "simplified_polygon": simplified,
+    }
+
+
 @router.post("/api/upload-gpx")
 @limiter.limit("10/minute")
 async def upload_gpx(

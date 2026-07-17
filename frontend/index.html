@@ -49,6 +49,7 @@
             <div class="menu-section" id="cyclistMainSection">
                 <span class="menu-section-title">Основное</span>
                 <button class="menu-item" id="menuUploadBtn">📤 Загрузить GPX</button>
+                <button class="menu-item" id="menuPlannerBtn">🗺 Спланировать маршрут</button>
                 <button class="menu-item" id="menuActivity">🔥 Активность</button>
                 <button class="menu-item" id="menuLeaderboard">🏆 Рейтинг</button>
             </div>
@@ -212,6 +213,16 @@
         <button id="stopRecordBtn" style="display:none;padding:14px 28px;background:#ff4444;border:none;border-radius:50px;color:#fff;font-size:15px;font-weight:700;cursor:pointer;box-shadow:0 4px 20px rgba(255,68,68,0.4);align-items:center;gap:8px;">
             ⏹ Завершить и захватить
         </button>
+    </div>
+
+    <div id="plannerBar" style="display:none;position:fixed;bottom:80px;left:50%;transform:translateX(-50%);z-index:9999;flex-direction:column;align-items:center;gap:6px;width:90%;max-width:400px;">
+        <div id="plannerInfo" style="background:rgba(10,10,26,0.96);color:#fff;padding:10px 16px;border-radius:12px;font-size:13px;text-align:center;width:100%;border:1px solid rgba(255,255,255,0.1);backdrop-filter:blur(12px);"></div>
+        <div style="display:flex;gap:6px;">
+            <button id="plannerBuildBtn" style="padding:8px 16px;border:none;border-radius:8px;background:#FF5722;color:#fff;font-size:13px;cursor:pointer;">🚲 Построить</button>
+            <button id="plannerClearBtn" style="padding:8px 16px;border:none;border-radius:8px;background:rgba(255,255,255,0.15);color:#fff;font-size:13px;cursor:pointer;">🗑</button>
+            <button id="plannerCaptureBtn" style="display:none;padding:8px 16px;border:none;border-radius:8px;background:#4CAF50;color:#fff;font-size:13px;cursor:pointer;">💾 Записать</button>
+            <button id="plannerCancelBtn" style="padding:8px 16px;border:none;border-radius:8px;background:rgba(255,255,255,0.08);color:#aaa;font-size:13px;cursor:pointer;">✕</button>
+        </div>
     </div>
 
     <div class="modal" id="referralModal">
