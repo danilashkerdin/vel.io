@@ -174,7 +174,7 @@ async def plan_route(body: PlanRouteRequest):
     # Пробуем построить маршрут через OSRM
     import httpx
     coords = ";".join(f"{p[1]},{p[0]}" for p in body.points)  # lon,lat for OSRM
-    osrm_url = f"https://router.project-osrm.org/route/v1/cycling/{coords}?overview=full&geometries=geojson"
+    osrm_url = f"https://router.project-osrm.org/route/v1/foot/{coords}?overview=full&geometries=geojson"
     try:
         r = await httpx.AsyncClient().get(osrm_url, timeout=15)
         if r.status_code == 200:
