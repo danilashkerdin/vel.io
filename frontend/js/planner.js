@@ -1,6 +1,5 @@
 import { getMap } from './map.js';
 import { API } from './config.js';
-import { getToken } from './auth.js';
 import { showToast } from './ui.js';
 
 let markers = [];
@@ -45,7 +44,7 @@ async function onMapClick(e) {
     const latlng = e.latlng;
     const marker = L.circleMarker([latlng.lat, latlng.lng], {
         radius: 6, color: "#FF5722", fillColor: "#FF5722", fillOpacity: 1,
-    }).addTo(getMap()).bindPopup(`<b>${latlng.lat.toFixed(5)}, ${latlng.lng.toFixed(5)}</b><br>Нажми Enter для построения`);
+    }).addTo(getMap()).bindPopup(`<b>${latlng.lat.toFixed(5)}, ${latlng.lng.toFixed(5)}</b>`);
 
     markers.push({ marker, lat: latlng.lat, lng: latlng.lng });
     updateRoute();
@@ -71,25 +70,20 @@ export async function buildRoute() {
     const pts = markers.map(m => [m.lat, m.lng]);
     document.getElementById("plannerInfo").textContent = "Строим маршрут...";
 
-    const token = getToken();
-    if (!token) { showToast("Требуется авторизация", "error"); return; }
-
     try {
         const res = await fetch(`${API}/api/plan-route`, {
             method: "POST",
-            headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+            headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ points: pts }),
         });
         const data = await res.json();
         if (!res.ok) { showToast(data.detail || "Ошибка", "error"); return; }
 
-        // Показываем полигон будущей территории
         if (previewPolygon) { try { getMap()?.removeLayer(previewPolygon); } catch {} }
         previewPolygon = L.geoJSON(data.polygon, {
             style: { color: "#FF5722", fillColor: "#FF5722", fillOpacity: 0.15, weight: 2 },
         }).addTo(getMap());
 
-        // Обновляем линию маршрута (теперь с OSRM)
         if (routeLine) { try { getMap()?.removeLayer(routeLine); } catch {} }
         const routeLatlngs = data.route.map(p => [p[0], p[1]]);
         routeLine = L.polyline(routeLatlngs, { color: "#FF5722", weight: 4 }).addTo(getMap());
@@ -97,42 +91,7 @@ export async function buildRoute() {
         getMap().fitBounds(routeLine.getBounds().pad(0.1));
 
         document.getElementById("plannerInfo").textContent =
-            `📏 ${(data.area / 1_000_000).toFixed(2)} км², ${data.route.length} точек. Нажми «Записать» чтобы захватить`;
-
-        // Сохраняем данные для записи
-        document.getElementById("plannerCaptureBtn").dataset.route = JSON.stringify(data.route);
-        document.getElementById("plannerCaptureBtn").style.display = "inline-block";
-    } catch (e) {
-        showToast("Ошибка: " + e.message, "error");
-    }
-}
-
-export async function capturePlannedRoute() {
-    const btn = document.getElementById("plannerCaptureBtn");
-    const routeStr = btn?.dataset.route;
-    if (!routeStr) { showToast("Сначала построй маршрут", "error"); return; }
-
-    const route = JSON.parse(routeStr);
-    const pts = route.map(p => [p[0], p[1], 0]);
-
-    const token = getToken();
-    if (!token) { showToast("Требуется авторизация", "error"); return; }
-
-    try {
-        const res = await fetch(`${API}/api/capture-ride`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-            body: JSON.stringify({ points: pts }),
-        });
-        const data = await res.json();
-        if (!res.ok) { showToast(data.detail || "Ошибка", "error"); return; }
-
-        showToast(`✅ +${(data.area / 1_000_000).toFixed(2)} км²!`, "success");
-        const { showShareModal } = await import('./share.js');
-        showShareModal(data, data.sponsored_rewards);
-        const { loadTerritories } = await import('./map.js');
-        loadTerritories();
-        stopPlanner();
+            `📏 ${(data.area / 1_000_000).toFixed(2)} км² · ${data.route.length} точек`;
     } catch (e) {
         showToast("Ошибка: " + e.message, "error");
     }
@@ -140,7 +99,6 @@ export async function capturePlannedRoute() {
 
 export function initPlanner() {
     document.getElementById("plannerBuildBtn").onclick = buildRoute;
-    document.getElementById("plannerClearBtn").onclick = () => { clear(); document.getElementById("plannerCaptureBtn").style.display = "none"; };
+    document.getElementById("plannerClearBtn").onclick = () => { clear(); };
     document.getElementById("plannerCancelBtn").onclick = stopPlanner;
-    document.getElementById("plannerCaptureBtn").onclick = capturePlannedRoute;
 }
