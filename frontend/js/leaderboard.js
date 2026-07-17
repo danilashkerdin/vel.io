@@ -2,8 +2,18 @@ import { fetchLeaderboard, fetchMyTerritories } from './api.js';
 import { getUser } from './auth.js';
 
 function escapeHtml(str) {
-    if (!str) return "";
+    if (!str) {return "";}
     return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+}
+
+function timeLeft(expiresAt) {
+    if (!expiresAt) { return { text: "∞", color: "" }; }
+    const diff = new Date(expiresAt) - Date.now();
+    if (diff <= 0) { return { text: "Истекла", color: "#f44336" }; }
+    const days = Math.floor(diff / 86400000);
+    const hours = Math.floor((diff % 86400000) / 3600000);
+    if (days > 0) { return { text: `${days} д ${hours} ч`, color: days > 7 ? "#4CAF50" : "#FF9800" }; }
+    return { text: `${hours} ч ${Math.floor((diff % 3600000) / 60000)} мин`, color: "#f44336" };
 }
 
 export async function loadLeaderboard() {
@@ -37,7 +47,7 @@ export async function loadMyTerritories() {
                     <div style="width:12px;height:12px;border-radius:3px;background:${t.color || '#4CAF50'};flex-shrink:0;"></div>
                     <div style="flex:1;min-width:0;">
                         <div style="font-size:13px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${escapeHtml(t.name) || 'Безымянный'}</div>
-                        <div style="font-size:11px;color:#999;">${new Date(t.created_at).toLocaleDateString()}</div>
+                        <div style="font-size:11px;color:#999;">${new Date(t.created_at).toLocaleDateString()} ${timeLeft(t.expires_at).text !== "∞" ? `· <span style="color:${timeLeft(t.expires_at).color};">${timeLeft(t.expires_at).text}</span>` : ''}</div>
                     </div>
                     <span style="font-size:12px;color:#666;white-space:nowrap;">${(t.area / 1000000).toFixed(2)} км²</span>
                 </div>

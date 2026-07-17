@@ -49,6 +49,16 @@ function escapeHtml(str) {
     return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 }
 
+function timeLeft(expiresAt) {
+    if (!expiresAt) { return { text: "∞", color: "" }; }
+    const diff = new Date(expiresAt) - Date.now();
+    if (diff <= 0) { return { text: "Истекла", color: "#f44336" }; }
+    const days = Math.floor(diff / 86400000);
+    const hours = Math.floor((diff % 86400000) / 3600000);
+    if (days > 0) { return { text: `${days} д ${hours} ч`, color: days > 7 ? "#4CAF50" : "#FF9800" }; }
+    return { text: `${hours} ч ${Math.floor((diff % 3600000) / 60000)} мин`, color: "#f44336" };
+}
+
 function createTerritoryLayer(t, user) {
     const hasImage = t.image_url && t.image_url.length > 0;
     const fillColor = hasImage ? 'url(#' + getPatternId(t.image_url) + ')' : (t.color || "#4CAF50");
@@ -77,6 +87,10 @@ function createTerritoryLayer(t, user) {
         popupHtml += `<p style="margin:4px 0;font-size:13px;">${safeDesc}</p>`;
     }
     popupHtml += `<span style="font-size:12px;">${(t.area / 1000000).toFixed(2)} км²</span><br>`;
+    const tl = timeLeft(t.expires_at);
+    if (tl.text !== "∞") {
+        popupHtml += `<span style="font-size:11px;color:${tl.color};">⏳ ${tl.text}</span><br>`;
+    }
     const safeUsername = escapeHtml(t.username);
     if (safeUsername && !isOwner) {
         popupHtml += `<span style="font-size:11px;color:var(--color-text-muted);">👤 ${safeUsername}</span><br>`;
