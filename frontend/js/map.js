@@ -45,7 +45,7 @@ export function getPatternId(imageUrl) {
 }
 
 function escapeHtml(str) {
-    if (!str) return "";
+    if (!str) {return "";}
     return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 }
 
@@ -124,7 +124,7 @@ function createSponsoredMarker(s) {
                     A${logoR} ${logoR} 0 1 1 ${cx - 0.01} ${logoCy - logoR}
                     L${cx} ${pinH - 2} Z"
                     fill="white" stroke="${s.color}" stroke-width="2.5" stroke-linejoin="round"/>
-                ${s.image_url ? `<image href="${encodeURI(s.image_url)}" x="${cx - logoR}" y="${logoCy - logoR}" width="${logoR * 2}" height="${logoR * 2}" clip-path="url(#${uid}c)" preserveAspectRatio="xMidYMid slice"/>` : ''}
+                ${s.image_url ? `<image href="${s.image_url}" x="${cx - logoR}" y="${logoCy - logoR}" width="${logoR * 2}" height="${logoR * 2}" clip-path="url(#${uid}c)" preserveAspectRatio="xMidYMid slice"/>` : ''}
             </svg>
         `;
 
@@ -145,11 +145,11 @@ function createSponsoredMarker(s) {
 
     const safeName = escapeHtml(s.business_name);
     const safeDesc = escapeHtml(s.description);
-    const safeLink = s.link_url ? encodeURI(s.link_url) : null;
+    const safeLink = s.link_url ? s.link_url : null;
 
     let popupHtml = `<div style="max-width:200px;text-align:center;">`;
     if (s.image_url) {
-        popupHtml += `<img src="${encodeURI(s.image_url)}" style="width:60px;height:60px;border-radius:50%;object-fit:cover;margin-bottom:6px;">`;
+        popupHtml += `<img src="${s.image_url}" style="width:60px;height:60px;border-radius:50%;object-fit:cover;margin-bottom:6px;">`;
     }
     popupHtml += `<div style="font-weight:600;font-size:14px;">${safeName}</div>`;
     if (safeDesc) {
@@ -162,9 +162,9 @@ function createSponsoredMarker(s) {
     const stars = s.monthly_budget_stars || 0;
     if (stars >= 5000) {
         const contacts = [];
-        if (s.contact_phone) contacts.push(`📞 ${escapeHtml(s.contact_phone)}`);
-        if (s.contact_telegram) contacts.push(`💬 ${escapeHtml(s.contact_telegram)}`);
-        if (s.website) contacts.push(`🌐 <a href="${encodeURI(s.website)}" target="_blank" style="color:var(--color-primary);">${escapeHtml(s.website)}</a>`);
+        if (s.contact_phone) {contacts.push(`📞 ${escapeHtml(s.contact_phone)}`);}
+        if (s.contact_telegram) {contacts.push(`💬 ${escapeHtml(s.contact_telegram)}`);}
+        if (s.website) {contacts.push(`🌐 <a href="${encodeURI(s.website)}" target="_blank" style="color:var(--color-primary);">${escapeHtml(s.website)}</a>`);}
         if (contacts.length) {
             popupHtml += `<div style="margin-top:8px;padding:8px;background:rgba(255,215,0,0.08);border-radius:8px;font-size:12px;line-height:1.6;">${contacts.join("<br>")}</div>`;
         }
@@ -184,7 +184,7 @@ async function loadSponsored() {
             east: b.getEast(),
             west: b.getWest(),
         }).toString());
-        if (!res.ok) return;
+        if (!res.ok) {return;}
         const sponsored = await res.json();
 
         const incomingIds = new Set(sponsored.map(s => s.id));
@@ -211,7 +211,7 @@ export async function loadTerritories() {
     const b = map.getBounds();
 
     // Abort any in-flight request
-    if (fetchController) fetchController.abort();
+    if (fetchController) {fetchController.abort();}
     fetchController = new AbortController();
     const signal = fetchController.signal;
 
@@ -248,20 +248,20 @@ export async function loadTerritories() {
         updateStats(territories);
         await loadSponsored();
     } catch (e) {
-        if (e.name === 'AbortError') return;  // expected, ignore
+        if (e.name === 'AbortError') {return;}  // expected, ignore
         console.error(e);
     }
 }
 
 function debouncedLoadTerritories() {
-    if (loadTimeout) clearTimeout(loadTimeout);
+    if (loadTimeout) {clearTimeout(loadTimeout);}
     loadTimeout = setTimeout(loadTerritories, 450);
 }
 
 async function getInitialView() {
     try {
         const res = await fetch(`${API}/api/initial-view`, { headers: authHeaders() });
-        if (res.ok) return await res.json();
+        if (res.ok) {return await res.json();}
     } catch (e) {
         console.error("Failed to get initial view:", e);
     }
@@ -300,7 +300,7 @@ export async function initMap() {
 
 /** Центрирует карту на полигоне территории (после загрузки GPX) */
 export function centerOnTerritory(territory) {
-    if (!map || !territory.polygon) return;
+    if (!map || !territory.polygon) {return;}
     const layer = L.geoJSON(territory.polygon);
     map.fitBounds(layer.getBounds(), { padding: [30, 30] });
 }
