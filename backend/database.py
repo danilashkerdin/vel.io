@@ -61,6 +61,7 @@ def init_db():
         conn.commit()
     _add_column_if_not_exists("users", "referred_by", "UUID REFERENCES users(id) ON DELETE SET NULL")
     _add_column_if_not_exists("users", "referral_bonuses", "INTEGER NOT NULL DEFAULT 0")
+    _add_column_if_not_exists("users", "telegram_chat_id", "VARCHAR(32)")
     if "crypto_wallet" in _get_columns("users"):
         with engine.connect() as conn:
             conn.execute(text("ALTER TABLE users DROP COLUMN crypto_wallet"))
@@ -127,7 +128,51 @@ def _activate_demo_zone():
         ).first()
         if zone and not zone.is_active:
             zone.is_active = True
-            session.commit()
+session.commit()
+
+    # После очистки — уведомления о скором истечении
+    _notify_expiring_territories()
+
+
+def _notify_expiring_territories():
+    """Отправляет Telegram-уведомления владельцам территорий, которые скоро сгорят."""
+    from datetime import datetime, timezone, timedelta
+    from models import User, Territory
+
+    now = datetime.now(timezone.utc)
+    soon = now + timedelta(days=1)
+    very_soon = now + timedelta(hours=6)
+
+    with SessionLocal() as session:
+        territories = (
+            session.query(Territory, User.telegram_chat_id)
+            .join(User, User.id == Territory.user_id)
+            .filter(
+                Territory.expires_at.isnot(None),
+                Territory.expires_at > now,
+                Territory.expires_at <= soon,
+                User.telegram_chat_id.isnot(None),
+            )
+            .all()
+        )
+
+        for t, chat_id in territories:
+            remaining = t.expires_at - now
+            if remaining.total_seconds() <= 0:
+                continue
+            text = f"⚠️ Твоя территория *{t.name}* скоро сгорит! Осталось *{remaining.seconds // 3600} ч {remaining.seconds % 3600 // 60} мин*"
+            # Шлём в телеграм
+            import httpx
+            bot_token = settings.TELEGRAM_BOT_TOKEN
+            if bot_token:
+                try:
+                    httpx.post(
+                        f"https://api.telegram.org/bot{bot_token}/sendMessage",
+                        json={"chat_id": chat_id, "text": text, "parse_mode": "Markdown"},
+                        timeout=10,
+                    )
+                except Exception as e:
+                    logger.error("Failed to send expiry notification: %s", e)
             logger.info("Activated demo sponsored zone «Здесь может быть ваша реклама»")
 
 

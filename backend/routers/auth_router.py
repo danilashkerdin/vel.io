@@ -149,12 +149,14 @@ async def telegram_auth(request: Request, db: Session = Depends(get_db)):
         db.commit()
         db.refresh(user)
 
-        # Первые N пользователей получают premium бесплатно
         total_users = db.query(User).count()
         if total_users <= settings.FREE_PREMIUM_SLOTS:
             user.is_premium = True
             db.commit()
             db.refresh(user)
+
+    user.telegram_chat_id = str(tg_id)
+    db.commit()
 
     token = create_access_token({"sub": str(user.id)})
     return _user_response(user, token)

@@ -156,6 +156,8 @@ async def telegram_webhook(request: Request, db: Session = Depends(get_db)):
             db.add(user)
             db.flush()
 
+        user.telegram_chat_id = str(chat_id)
+
             if ref_user_id:
                 try:
                     ref_uuid = UUID(ref_user_id)

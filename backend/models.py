@@ -20,6 +20,7 @@ class User(Base):
     is_advertiser = Column(Boolean, default=False, nullable=False)
     referred_by = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL"), nullable=True, index=True)
     referral_bonuses = Column(Integer, default=0, nullable=False)
+    telegram_chat_id = Column(String(32), nullable=True, index=True)
     created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
 
 
