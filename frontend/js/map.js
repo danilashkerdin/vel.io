@@ -119,26 +119,40 @@ function createSponsoredMarker(s) {
 
     if (isPoint) {
         const [lng, lat] = s.polygon.coordinates;
-        const size = s.icon_size || 32;
+        const size = s.icon_size || 36;
         const pinW = size;
-        const pinH = Math.round(size * 1.35);
+        const pinH = Math.round(size * 1.4);
         const cx = pinW / 2;
-        const logoR = pinW * 0.38;
-        const logoCy = pinW * 0.38;
+        const logoR = pinW * 0.35;
+        const logoCy = pinW * 0.35;
         const uid = `p${++pinSvgIdCounter}`;
+        const color = s.color || "#FFD700";
+
+        // glow gradient
+        const gradId = `${uid}g`;
 
         const pinSvg = `
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${pinW} ${pinH}" width="${pinW}" height="${pinH}">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${pinW} ${pinH}" width="${pinW}" height="${pinH}" style="filter:drop-shadow(0 2px 4px rgba(0,0,0,0.3));">
                 <defs>
+                    <linearGradient id="${gradId}" x1="0%" y1="0%" x2="100%" y2="100%">
+                        <stop offset="0%" stop-color="${color}" stop-opacity="1"/>
+                        <stop offset="100%" stop-color="${color}dd" stop-opacity="0.85"/>
+                    </linearGradient>
                     <clipPath id="${uid}c">
                         <circle cx="${cx}" cy="${logoCy}" r="${logoR}"/>
                     </clipPath>
                 </defs>
-                <path d="M${cx} ${logoCy - logoR}
-                    A${logoR} ${logoR} 0 1 1 ${cx - 0.01} ${logoCy - logoR}
-                    L${cx} ${pinH - 2} Z"
-                    fill="white" stroke="${s.color}" stroke-width="2.5" stroke-linejoin="round"/>
-                ${s.image_url ? `<image href="${s.image_url}" x="${cx - logoR}" y="${logoCy - logoR}" width="${logoR * 2}" height="${logoR * 2}" clip-path="url(#${uid}c)" preserveAspectRatio="xMidYMid slice"/>` : ''}
+                <!-- pin body -->
+                <path d="M${cx} ${logoCy - logoR - 2}
+                    A${logoR + 2} ${logoR + 2} 0 1 1 ${cx - 0.01} ${logoCy - logoR - 2}
+                    L${cx} ${pinH - 3} Z"
+                    fill="url(#${gradId})" stroke="white" stroke-width="1.5" stroke-linejoin="round"/>
+                <!-- inner circle -->
+                <circle cx="${cx}" cy="${logoCy}" r="${logoR - 1}" fill="white" stroke="${color}" stroke-width="1"/>
+                ${s.image_url ? `<image href="${s.image_url}" x="${cx - logoR + 1}" y="${logoCy - logoR + 1}" width="${(logoR - 1) * 2}" height="${(logoR - 1) * 2}" clip-path="url(#${uid}c)" preserveAspectRatio="xMidYMid slice"/>` : `<text x="${cx}" y="${logoCy + 1}" text-anchor="middle" font-size="${logoR}px" dominant-baseline="central">🏪</text>`}
+                <!-- stars badge -->
+                <rect x="${cx - 8}" y="${pinH - 10}" width="16" height="10" rx="3" fill="${color}" stroke="white" stroke-width="0.5"/>
+                <text x="${cx}" y="${pinH - 4}" text-anchor="middle" font-size="7" font-weight="bold" fill="white">⭐</text>
             </svg>
         `;
 
@@ -147,13 +161,13 @@ function createSponsoredMarker(s) {
             iconSize: [pinW, pinH],
             iconAnchor: [cx, pinH - 2],
             popupAnchor: [0, -pinH],
-            className: "",
+            className: "sponsored-marker",
         });
 
         layer = L.marker([lat, lng], { icon });
     } else {
         layer = L.geoJSON(s.polygon, {
-            style: { color: s.color, fillOpacity: 0.2, weight: 2 },
+            style: { color: s.color || "#FFD700", fillOpacity: 0.15, weight: 2, dashArray: "6,4" },
         });
     }
 
