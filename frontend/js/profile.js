@@ -2,10 +2,6 @@ import { openModal, showToast } from './ui.js';
 import { API } from './config.js';
 import { getMap } from './map.js';
 
-import { openModal } from './ui.js';
-import { API } from './config.js';
-import { getMap } from './map.js';
-
 export async function showUserProfile(userId, username) {
     document.getElementById("userProfileTitle").textContent = `👤 ${escapeHtml(username)}`;
     document.getElementById("userProfileContent").innerHTML = "Загрузка...";
