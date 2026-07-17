@@ -12,6 +12,11 @@ const authHeaders = () => {
     return t ? { Authorization: `Bearer ${t}` } : {};
 };
 
+function escapeHtml(str) {
+    if (!str) { return ""; }
+    return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+}
+
 async function api(path, opts = {}) {
     try {
         const headers = { ...authHeaders() };
@@ -72,7 +77,7 @@ function logoutAdmin() {
 
 async function loadTiers() {
     const res = await api("/api/admin/tiers");
-    if (!res) return;
+    if (!res) {return;}
     tiers = await res.json();
     const sel = document.getElementById("fBudget");
     sel.innerHTML = tiers.map(t =>
@@ -104,7 +109,7 @@ function initMap() {
 }
 
 function placeMarker(latlng) {
-    if (drawnLayer) map.removeLayer(drawnLayer);
+    if (drawnLayer) {map.removeLayer(drawnLayer);}
     drawnLayer = L.marker(latlng, { draggable: true }).addTo(map);
     markerPlaced = true;
 }
@@ -116,7 +121,7 @@ function clearDrawing() {
 
 async function loadDashboard() {
     const res = await api("/api/admin/dashboard");
-    if (!res) return;
+    if (!res) {return;}
     const d = await res.json();
     document.getElementById("statActive").textContent = d.active_sponsored;
     document.getElementById("statRevenue").textContent = `${(d.total_monthly_revenue_rub * 0.9).toLocaleString()}₽`;
@@ -126,7 +131,7 @@ async function loadDashboard() {
 
 async function loadZones() {
     const res = await api("/api/admin/sponsored-territories");
-    if (!res) return;
+    if (!res) {return;}
     zonesData = await res.json();
 
     const el = document.getElementById("zonesList");
@@ -156,7 +161,7 @@ function editZone(zone) {
     document.getElementById("fDescription").value = zone.description || "";
     const sel = document.getElementById("fBudget");
     sel.value = zone.monthly_budget_rub;
-    if (!sel.value) sel.value = tiers.length > 0 ? tiers[0].stars * 10 : 5000;
+    if (!sel.value) {sel.value = tiers.length > 0 ? tiers[0].stars * 10 : 5000;}
     document.getElementById("fColor").value = zone.color;
     document.getElementById("fImage").value = zone.image_url || "";
     document.getElementById("fLink").value = zone.link_url || "";
@@ -226,13 +231,13 @@ async function saveZone() {
             method: "PATCH",
             body: JSON.stringify(body),
         });
-        if (!res) return;
+        if (!res) {return;}
     } else {
         const res = await api("/api/admin/sponsored-territories", {
             method: "POST",
             body: JSON.stringify(body),
         });
-        if (!res) return;
+        if (!res) {return;}
     }
 
     cancelForm();
@@ -248,9 +253,9 @@ function cancelForm() {
 }
 
 async function deleteZone() {
-    if (!editingId || !confirm("Удалить спонсорскую зону?")) return;
+    if (!editingId || !confirm("Удалить спонсорскую зону?")) {return;}
     const res = await api(`/api/admin/sponsored-territories/${editingId}`, { method: "DELETE" });
-    if (!res) return;
+    if (!res) {return;}
     cancelForm();
     await loadZones();
     await loadDashboard();
@@ -307,7 +312,7 @@ async function loadPayouts() {
         btn.onclick = async () => {
             const userId = btn.dataset.user;
             const userName = btn.dataset.name;
-            if (!confirm(`Выплатить ${userName}? Деньги будут отмечены как выплаченные.`)) return;
+            if (!confirm(`Выплатить ${userName}? Деньги будут отмечены как выплаченные.`)) {return;}
             const r = await api(`/api/admin/payouts/process/${userId}`, { method: "POST" });
             if (r && r.ok) { showToast("✅ Выплата обработана"); loadPayouts(); loadDashboard(); }
             else { const e = r ? await r.json() : {}; showToast(e.detail || "Ошибка", "error"); }
@@ -339,23 +344,74 @@ document.addEventListener("DOMContentLoaded", () => {
 
     document.getElementById("tabZonesBtn").onclick = () => {
         document.getElementById("sectionZones").style.display = "block";
+        document.getElementById("sectionUsers").style.display = "none";
         document.getElementById("sectionPayouts").style.display = "none";
         document.getElementById("tabZonesBtn").style.background = "#4CAF50";
         document.getElementById("tabZonesBtn").style.color = "white";
+        document.getElementById("tabUsersBtn").style.background = "#ddd";
+        document.getElementById("tabUsersBtn").style.color = "#333";
         document.getElementById("tabPayoutsBtn").style.background = "#ddd";
         document.getElementById("tabPayoutsBtn").style.color = "#333";
     };
+    document.getElementById("tabUsersBtn").onclick = () => {
+        document.getElementById("sectionZones").style.display = "none";
+        document.getElementById("sectionUsers").style.display = "block";
+        document.getElementById("sectionPayouts").style.display = "none";
+        document.getElementById("tabUsersBtn").style.background = "#4CAF50";
+        document.getElementById("tabUsersBtn").style.color = "white";
+        document.getElementById("tabZonesBtn").style.background = "#ddd";
+        document.getElementById("tabZonesBtn").style.color = "#333";
+        document.getElementById("tabPayoutsBtn").style.background = "#ddd";
+        document.getElementById("tabPayoutsBtn").style.color = "#333";
+        loadUsers();
+    };
     document.getElementById("tabPayoutsBtn").onclick = () => {
         document.getElementById("sectionZones").style.display = "none";
+        document.getElementById("sectionUsers").style.display = "none";
         document.getElementById("sectionPayouts").style.display = "block";
         document.getElementById("tabPayoutsBtn").style.background = "#4CAF50";
         document.getElementById("tabPayoutsBtn").style.color = "white";
         document.getElementById("tabZonesBtn").style.background = "#ddd";
         document.getElementById("tabZonesBtn").style.color = "#333";
+        document.getElementById("tabUsersBtn").style.background = "#ddd";
+        document.getElementById("tabUsersBtn").style.color = "#333";
         loadPayouts();
     };
 
+async function loadUsers() {
+    const el = document.getElementById("usersList");
+    try {
+        const data = await api("/api/admin/users?limit=100");
+        el.innerHTML = data.map(u => `
+            <div style="display:flex;align-items:center;padding:8px 0;border-bottom:1px solid rgba(255,255,255,0.06);gap:8px;flex-wrap:wrap;">
+                <div style="flex:1;min-width:120px;">
+                    <div style="font-weight:600;font-size:13px;">${escapeHtml(u.username)}</div>
+                    <div style="font-size:11px;color:#999;">${escapeHtml(u.email)}</div>
+                </div>
+                <span style="font-size:12px;color:#666;">${u.captures_count} захв.</span>
+                <span style="font-size:12px;color:#666;">${u.balance_rub}₽</span>
+                ${u.is_premium ? '<span style="font-size:11px;color:#FFD700;">⭐</span>' : ''}
+                ${u.is_advertiser ? '<span style="font-size:11px;color:#4CAF50;">📢</span>' : ''}
+                <button class="btn btn-sm admin-toggle-premium" data-user-id="${u.id}" data-premium="${u.is_premium}" style="background:${u.is_premium ? '#FF9800' : '#555'};color:#fff;border:none;border-radius:6px;padding:4px 10px;font-size:11px;cursor:pointer;">
+                    ${u.is_premium ? 'Снять Premium' : 'Дать Premium'}
+                </button>
+            </div>
+        `).join('');
+
+        el.querySelectorAll(".admin-toggle-premium").forEach(btn => {
+            btn.onclick = async () => {
+                const userId = btn.dataset.userId;
+                const isPremium = btn.dataset.premium === "true";
+                await api(`/api/admin/users/${userId}?is_premium=${!isPremium}`, { method: "PATCH" });
+                loadUsers();
+            };
+        });
+    } catch (e) {
+        el.innerHTML = '<p style="color:#f44336;">Ошибка загрузки</p>';
+    }
+}
+
     document.getElementById("adminPassword").addEventListener("keydown", e => {
-        if (e.key === "Enter") loginAdmin();
+        if (e.key === "Enter") {loginAdmin();}
     });
 });

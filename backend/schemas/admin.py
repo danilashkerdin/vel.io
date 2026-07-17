@@ -29,3 +29,7 @@ class AdminDashboard(BaseModel):
     total_monthly_revenue: int
     total_earned_by_users: int
     pending_payouts: int
+
+
+class AdminBalanceUpdate(BaseModel):
+    amount: int  # положительное — начислить, отрицательное — списать

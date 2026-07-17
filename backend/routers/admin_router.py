@@ -9,9 +9,10 @@ from shapely.geometry import shape as shapely_shape
 from shapely.geometry import mapping
 
 from database import get_db
-from models import User, SponsoredTerritory, UserBalance, Transaction
+from models import User, Territory, SponsoredTerritory, UserBalance, Transaction
 from auth import get_current_user
 from config import settings
+from schemas import admin as schemas
 from schemas.admin import SponsoredTerritoryCreate, SponsoredTerritoryUpdate
 
 router = APIRouter(prefix="/api/admin", tags=["admin"])
@@ -30,7 +31,108 @@ def get_tiers(_=Depends(_require_admin)):
     return settings.sponsored_tiers
 
 
-@router.get("/dashboard")
+@router.get("/users")
+def admin_users(
+    limit: int = Query(50, ge=1, le=200),
+    offset: int = Query(0, ge=0),
+    db: Session = Depends(get_db),
+    _=Depends(_require_admin),
+):
+    users = (
+        db.query(
+            User.id, User.email, User.username, User.is_premium,
+            User.is_advertiser, User.captures_count, User.created_at,
+            UserBalance.balance_rub,
+        )
+        .outerjoin(UserBalance, UserBalance.user_id == User.id)
+        .order_by(User.created_at.desc())
+        .offset(offset)
+        .limit(limit)
+        .all()
+    )
+    return [
+        {
+            "id": str(u.id),
+            "email": u.email,
+            "username": u.username,
+            "is_premium": u.is_premium,
+            "is_advertiser": u.is_advertiser,
+            "captures_count": u.captures_count,
+            "balance_rub": u.balance_rub or 0,
+            "created_at": u.created_at.isoformat() if u.created_at else None,
+        }
+        for u in users
+    ]
+
+
+@router.get("/users/{user_id}")
+def admin_user_detail(
+    user_id: uuid.UUID,
+    db: Session = Depends(get_db),
+    _=Depends(_require_admin),
+):
+    user = db.query(User).filter(User.id == user_id).first()
+    if not user:
+        raise HTTPException(404, "Пользователь не найден")
+
+    balance = db.query(UserBalance).filter(UserBalance.user_id == user_id).first()
+    territory_count = db.query(func.count(Territory.id)).filter(
+        Territory.user_id == user_id
+    ).scalar() or 0
+    total_area = db.query(func.coalesce(func.sum(Territory.area), 0)).filter(
+        Territory.user_id == user_id
+    ).scalar() or 0
+
+    return {
+        "id": str(user.id),
+        "email": user.email,
+        "username": user.username,
+        "is_premium": user.is_premium,
+        "is_advertiser": user.is_advertiser,
+        "captures_count": user.captures_count,
+        "territory_count": territory_count,
+        "total_area": float(total_area),
+        "balance_rub": balance.balance_rub if balance else 0,
+        "total_earned_rub": balance.total_earned_rub if balance else 0,
+        "referral_bonuses": user.referral_bonuses,
+        "telegram_chat_id": user.telegram_chat_id,
+        "created_at": user.created_at.isoformat() if user.created_at else None,
+    }
+
+
+@router.patch("/users/{user_id}")
+def admin_update_user(
+    user_id: uuid.UUID,
+    is_premium: bool | None = None,
+    db: Session = Depends(get_db),
+    _=Depends(_require_admin),
+):
+    user = db.query(User).filter(User.id == user_id).first()
+    if not user:
+        raise HTTPException(404, "Пользователь не найден")
+    if is_premium is not None:
+        user.is_premium = is_premium
+    db.commit()
+    return {"ok": True, "user_id": str(user.id), "is_premium": user.is_premium}
+
+
+@router.post("/users/{user_id}/balance")
+def admin_set_balance(
+    user_id: uuid.UUID,
+    body: schemas.AdminBalanceUpdate,
+    db: Session = Depends(get_db),
+    _=Depends(_require_admin),
+):
+    user = db.query(User).filter(User.id == user_id).first()
+    if not user:
+        raise HTTPException(404, "Пользователь не найден")
+    balance = db.query(UserBalance).filter(UserBalance.user_id == user_id).first()
+    if not balance:
+        balance = UserBalance(user_id=user_id, balance_rub=0, total_earned_rub=0)
+        db.add(balance)
+    balance.balance_rub = max(0, (balance.balance_rub or 0) + body.amount)
+    db.commit()
+    return {"balance_rub": balance.balance_rub}
 def admin_dashboard(db: Session = Depends(get_db), _=Depends(_require_admin)):
     total = db.query(func.count(SponsoredTerritory.id)).scalar() or 0
     active = db.query(func.count(SponsoredTerritory.id)).filter(
