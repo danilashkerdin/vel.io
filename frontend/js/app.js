@@ -279,6 +279,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     };
     document.getElementById("menuUploadBtn").onclick = () => { closeMenu(); openModal("uploadModal"); };
     document.getElementById("menuPlannerBtn").onclick = () => { closeMenu(); startPlanner(); };
+    document.getElementById("menuRecordBtn").onclick = () => { closeMenu(); startRecording(); };
     document.getElementById("menuActivity").onclick = () => { closeMenu(); openModal("activityModal"); loadActivity(); };
     document.getElementById("menuLeaderboard").onclick = () => { closeMenu(); openModal("leaderboardModal"); loadLeaderboard(); };
     document.getElementById("menuPremium").onclick = () => {

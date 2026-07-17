@@ -31,7 +31,7 @@
     <button class="fab" id="fabBtn">+</button>
     <button class="burger" id="burgerBtn">☰</button>
 
-    <div class="side-menu" id="sideMenu">
+<div class="side-menu" id="sideMenu">
         <div class="menu-header">
             <h2>🚴 Velo.io</h2>
             <button class="menu-close" id="closeMenuBtn">✕</button>
@@ -46,34 +46,35 @@
             </div>
             <div class="menu-stats" id="menuStats"></div>
 
-            <div class="menu-section" id="cyclistMainSection">
-                <span class="menu-section-title">Основное</span>
+            <div class="menu-section" id="mainSection">
+                <span class="menu-section-title">🗺️</span>
                 <button class="menu-item" id="menuUploadBtn">📤 Загрузить GPX</button>
                 <button class="menu-item" id="menuPlannerBtn">🗺 Спланировать маршрут</button>
-                <button class="menu-item" id="menuActivity">🔥 Активность</button>
-                <button class="menu-item" id="menuLeaderboard">🏆 Рейтинг</button>
+                <button class="menu-item" id="menuRecordBtn">📍 Начать трек</button>
             </div>
 
-            <div class="menu-section" id="cyclistMySection">
-                <span class="menu-section-title">Моё</span>
+            <div class="menu-section" id="activitySection">
+                <span class="menu-section-title">⚡ Активность</span>
+                <button class="menu-item" id="menuActivity">🔥 Лента</button>
+                <button class="menu-item" id="menuLeaderboard">🏆 Рейтинг</button>
                 <button class="menu-item" id="menuMyTerritories">📋 Мои территории</button>
-                <button class="menu-item menu-premium" id="menuPremium">⭐ Premium</button>
-                <button class="menu-item menu-premium" id="menuBalance">💰 Мой доход</button>
                 <button class="menu-item" id="menuAchievements">🏆 Ачивки</button>
-                <button class="menu-item menu-premium" id="menuReferral">👥 Пригласить друга</button>
+            </div>
+
+            <div class="menu-section" id="profileSection">
+                <span class="menu-section-title">👤 Мой профиль</span>
+                <button class="menu-item" id="menuBalance">💰 Доход</button>
+                <button class="menu-item menu-premium" id="menuPremium">⭐ Premium</button>
+                <button class="menu-item" id="menuReferral">👥 Пригласить друга</button>
+                <button class="menu-item" id="menuContacts">📞 Контакты</button>
             </div>
 
             <div class="menu-section" id="advertiserSection" style="display:none;">
-                <span class="menu-section-title">Рекламодателю</span>
+                <span class="menu-section-title">🏪</span>
                 <button class="menu-item menu-advertiser" id="createSponsoredBtn">🏪 Создать зону</button>
                 <button class="menu-item menu-advertiser" id="myAdvertiserZonesBtn">📋 Мои зоны</button>
                 <button class="menu-item menu-advertiser" id="advertiserDashboardBtn">📊 Дашборд</button>
                 <button class="menu-item menu-advertiser" id="advertiserProfileBtn">⚙️ Профиль бизнеса</button>
-            </div>
-
-            <div class="menu-section">
-                <span class="menu-section-title">Поддержка</span>
-                <button class="menu-item" id="menuContacts">📞 Контакты</button>
             </div>
         </div>
         <div class="menu-footer">
@@ -82,9 +83,9 @@
         </div>
     </div>
 
-    <div class="overlay" id="overlay"></div>
-
     <input type="file" id="fileInput" accept=".gpx,.xml" style="display:none" />
+
+    <div class="overlay" id="overlay"></div>
 
     <div class="modal" id="uploadModal">
         <div class="modal-content">
