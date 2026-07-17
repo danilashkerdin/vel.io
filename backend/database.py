@@ -90,7 +90,8 @@ def init_db():
     _add_column_if_not_exists("sponsored_territories", "is_active", "BOOLEAN NOT NULL DEFAULT TRUE")
     _add_column_if_not_exists("territories", "expires_at", "TIMESTAMP WITH TIME ZONE")
     _fix_column_type("notifications", "read", "BOOLEAN DEFAULT FALSE")
-    _activate_demo_zone()
+_activate_demo_zone()
+    _cleanup_expired()
 
 
 def _fix_column_type(table: str, column: str, new_type: str):
@@ -139,3 +140,28 @@ def _get_columns(table: str) -> set:
             )
         ).fetchall()
         return {r[0] for r in rows}
+
+
+def _cleanup_expired():
+    """Удаляет просроченные территории и деактивирует просроченные спонсорские зоны."""
+    from datetime import datetime, timezone
+    now = datetime.now(timezone.utc)
+    with SessionLocal() as session:
+        # Удаляем истёкшие территории обычных пользователей
+        deleted = session.query(Territory).filter(
+            Territory.expires_at.isnot(None),
+            Territory.expires_at <= now,
+        ).delete(synchronize_session=False)
+        if deleted:
+            logger.info("Deleted %d expired territories", deleted)
+
+        # Деактивируем истёкшие спонсорские зоны
+        deactivated = session.query(SponsoredTerritory).filter(
+            SponsoredTerritory.expires_at.isnot(None),
+            SponsoredTerritory.expires_at <= now,
+            SponsoredTerritory.is_active == True,
+        ).update({"is_active": False}, synchronize_session=False)
+        if deactivated:
+            logger.info("Deactivated %d expired sponsored territories", deactivated)
+
+        session.commit()
