@@ -1,0 +1,16 @@
+#!/bin/bash
+# Pre-push hook: block direct pushes to main branch
+
+BRANCH=$(git rev-parse --abbrev-ref HEAD)
+PROTECTED="main"
+
+if [ "$BRANCH" = "$PROTECTED" ]; then
+    echo ""
+    echo "🚫 Direct push to '$PROTECTED' is not allowed!"
+    echo "   Create a feature branch and use PR/merge instead."
+    echo ""
+    echo "   To bypass (not recommended): git push --no-verify origin $PROTECTED"
+    exit 1
+fi
+
+exit 0

@@ -1,0 +1,36 @@
+#!/bin/bash
+# Pre-commit hook: run ESLint on staged frontend JS files
+# Only errors block the commit — warnings are informational.
+
+STAGED_JS=$(git diff --cached --name-only --diff-filter=ACM | grep -E '^frontend/js/.+\.js$' | grep -v 'sw\.js$')
+
+if [ -z "$STAGED_JS" ]; then
+    exit 0
+fi
+
+ESLINT="./frontend/node_modules/.bin/eslint"
+if [ ! -x "$ESLINT" ]; then
+    echo "⚠️  ESLint not installed. Run: cd frontend && npm install"
+    exit 0
+fi
+
+PASS=true
+for FILE in $STAGED_JS; do
+    OUTPUT=$("$ESLINT" --config frontend/.eslintrc.json "$FILE" 2>&1)
+    EXIT_CODE=$?
+    if [ $EXIT_CODE -ne 0 ]; then
+        echo "❌ $FILE"
+        echo "$OUTPUT"
+        PASS=false
+    fi
+done
+
+if [ "$PASS" = false ]; then
+    echo ""
+    echo "❌ ESLint errors found. Fix them before committing."
+    echo "   To bypass: git commit --no-verify"
+    exit 1
+fi
+
+echo "✅ ESLint passed"
+exit 0
