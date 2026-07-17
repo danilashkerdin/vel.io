@@ -62,8 +62,8 @@ function updateRoute() {
 }
 
 export async function buildRoute() {
-    if (markers.length < 2) {
-        showToast("Поставь минимум 2 точки", "error");
+    if (markers.length < 3) {
+        showToast("Поставь минимум 3 точки для замкнутого маршрута", "error");
         return;
     }
 

@@ -165,8 +165,8 @@ class PlanRouteRequest(BaseModel):
 @router.post("/api/plan-route")
 async def plan_route(body: PlanRouteRequest):
     """Строит маршрут через OSRM по точкам и возвращает polyline + polygon территории."""
-    if len(body.points) < 2:
-        raise HTTPException(400, "Минимум 2 точки")
+    if len(body.points) < 3:
+        raise HTTPException(400, "Минимум 3 точки, чтобы построить замкнутый маршрут")
 
     # Нормализуем в формат [lat, lng, 0]
     pts = [(p[0], p[1], 0) for p in body.points]
