@@ -3,10 +3,11 @@ import { showToast } from './ui.js';
 import { showShareModal } from './share.js';
 import { API } from './config.js';
 
-let recording = false;
+const recording = false;
 let watchId = null;
 let points = [];
 let pathLayer = null;
+let userMarker = null;
 let startTime = null;
 
 const STATUS = {
@@ -62,16 +63,25 @@ function updateUI() {
     }
 }
 
-function updatePathOnMap() {
+function clearLayers() {
     const map = getMap();
-    if (!map) return;
-
     if (pathLayer) {
-        try { map.removeLayer(pathLayer); } catch {}
+        try { map?.removeLayer(pathLayer); } catch {}
         pathLayer = null;
     }
+    if (userMarker) {
+        try { map?.removeLayer(userMarker); } catch {}
+        userMarker = null;
+    }
+}
 
-    if (points.length < 2) return;
+function updatePathOnMap() {
+    const map = getMap();
+    if (!map) {return;}
+
+    clearLayers();
+
+    if (points.length < 2) {return;}
 
     const latlngs = points.map(p => [p.lat, p.lng]);
     pathLayer = L.polyline(latlngs, {
@@ -81,14 +91,17 @@ function updatePathOnMap() {
         smoothFactor: 1,
     }).addTo(map);
 
-    if (points.length === 1) {
-        const last = points[points.length - 1];
-        L.circleMarker([last.lat, last.lng], {
-            radius: 6,
-            color: "#FFD700",
-            fillColor: "#FFD700",
-            fillOpacity: 1,
-        }).addTo(pathLayer);
+    const last = points[points.length - 1];
+    if (userMarker) {
+        userMarker.setLatLng([last.lat, last.lng]);
+    } else {
+        const icon = L.divIcon({
+            html: '<div style="width:20px;height:20px;background:#FFD700;border:3px solid #fff;border-radius:50%;box-shadow:0 0 8px rgba(0,0,0,0.4);"></div>',
+            iconSize: [20, 20],
+            iconAnchor: [10, 10],
+            className: "",
+        });
+        userMarker = L.marker([last.lat, last.lng], { icon, zIndexOffset: 10000 }).addTo(map);
     }
 }
 
@@ -116,7 +129,7 @@ function onPositionError(err) {
 }
 
 export function startRecording() {
-    if (state !== STATUS.IDLE) return;
+    if (state !== STATUS.IDLE) {return;}
     if (!navigator.geolocation) {
         showToast("⚠ Геолокация не поддерживается браузером", "error");
         return;
@@ -152,7 +165,7 @@ export function startRecording() {
 }
 
 function stopRecording(errorMsg) {
-    if (state === STATUS.IDLE) return;
+    if (state === STATUS.IDLE) {return;}
 
     if (watchId !== null) {
         navigator.geolocation.clearWatch(watchId);
@@ -162,10 +175,7 @@ function stopRecording(errorMsg) {
     if (errorMsg) {
         state = STATUS.IDLE;
         points = [];
-        if (pathLayer) {
-            try { getMap()?.removeLayer(pathLayer); } catch {}
-            pathLayer = null;
-        }
+        clearLayers();
         updateUI();
         document.getElementById("recordContainer").style.display = "none";
         showToast(errorMsg, "error");
@@ -178,7 +188,7 @@ function stopRecording(errorMsg) {
 }
 
 export async function stopAndCapture() {
-    if (state !== STATUS.RECORDING) return;
+    if (state !== STATUS.RECORDING) {return;}
 
     if (watchId !== null) {
         navigator.geolocation.clearWatch(watchId);
@@ -189,10 +199,7 @@ export async function stopAndCapture() {
         showToast("⚠ Слишком мало точек. Нужно минимум 5.", "error");
         state = STATUS.IDLE;
         points = [];
-        if (pathLayer) {
-            try { getMap()?.removeLayer(pathLayer); } catch {}
-            pathLayer = null;
-        }
+        clearLayers();
         updateUI();
         document.getElementById("recordContainer").style.display = "none";
         return;
@@ -248,15 +255,12 @@ async function processRecording() {
 function resetAfterRecording() {
     state = STATUS.IDLE;
     points = [];
-    if (pathLayer) {
-        try { getMap()?.removeLayer(pathLayer); } catch {}
-        pathLayer = null;
-    }
+    clearLayers();
     updateUI();
     document.getElementById("recordContainer").style.display = "none";
 }
 
 export function initRecorder() {
     const stopBtn = document.getElementById("stopRecordBtn");
-    if (stopBtn) stopBtn.onclick = stopAndCapture;
+    if (stopBtn) {stopBtn.onclick = stopAndCapture;}
 }
