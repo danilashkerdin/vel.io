@@ -73,6 +73,12 @@ async def telegram_webhook(request: Request, db: Session = Depends(get_db)):
     if not BOT_TOKEN:
         raise HTTPException(503, "Telegram bot not configured")
 
+    # Verify X-Telegram-Bot-Api-Secret-Token
+    secret_token = request.headers.get("X-Telegram-Bot-Api-Secret-Token")
+    expected = hashlib.sha256(BOT_TOKEN.encode()).hexdigest()[:32]
+    if not secret_token or secret_token != expected:
+        raise HTTPException(403, "Invalid webhook secret")
+
     body = await request.json()
     logger.info("Telegram update: %s", json.dumps(body, ensure_ascii=False)[:300])
 

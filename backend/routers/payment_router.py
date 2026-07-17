@@ -222,7 +222,7 @@ def request_payout(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
-    """Запрос на выплату в TON."""
+    """Запрос на выплату."""
     balance = db.query(UserBalance).filter(
         UserBalance.user_id == current_user.id
     ).first()
@@ -234,6 +234,15 @@ def request_payout(
     if not wallet:
         raise HTTPException(400, "Сначала укажите TON-кошелёк в профиле")
 
+    # Проверяем, нет ли уже ожидающей выплаты
+    existing = db.query(Transaction).filter(
+        Transaction.user_id == current_user.id,
+        Transaction.type == "payout",
+        Transaction.status == "pending",
+    ).first()
+    if existing:
+        raise HTTPException(400, "У вас уже есть запрос на выплату. Дождитесь обработки.")
+
     amount_rub = balance.balance_rub
     tx = Transaction(
         user_id=current_user.id,
@@ -243,7 +252,6 @@ def request_payout(
         status="pending",
     )
     db.add(tx)
-    balance.balance_rub = 0
     db.commit()
 
     return {

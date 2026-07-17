@@ -7,6 +7,7 @@ from sqlalchemy.orm import Session
 from sqlalchemy import func
 from geoalchemy2.shape import to_shape
 from shapely.geometry import mapping
+from config import settings
 
 from database import get_db
 from models import User, SponsoredTerritory, AdvertiserProfile, AdvertiserPayment
