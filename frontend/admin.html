@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+    <meta name="theme-color" content="#4a90e2">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Velo.io">
+    <link rel="manifest" href="/manifest.json">
+    <link rel="icon" type="image/svg+xml" href="/icons/icon-192.svg">
+    <link rel="apple-touch-icon" href="/icons/icon-192.png">
+    <title>Velo.io — Admin</title>
+    <link rel="preconnect" href="https://unpkg.com" />
+    <link rel="preconnect" href="https://tile.openstreetmap.org" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <link rel="stylesheet" href="css/base.css" />
+    <link rel="stylesheet" href="css/main.css" />
+    <style>
+        body { margin: 0; overflow: hidden; background: #0a0a1a; color: #fff; }
+        .admin-layout { display: flex; height: 100dvh; }
+        .admin-sidebar { width: 340px; background: rgba(16, 16, 36, 0.95); border-right: 1px solid var(--glass-border); overflow-y: auto; padding: 16px; flex-shrink: 0; }
+        .admin-map { flex: 1; position: relative; }
+        .admin-sidebar h2 { font-size: 16px; margin-bottom: 12px; color: #fff; font-family: 'Space Grotesk', sans-serif; }
+        .admin-card { background: var(--glass-bg); border: 1px solid var(--glass-border); border-radius: var(--radius); padding: 12px; margin-bottom: 8px; cursor: pointer; }
+        .admin-card:hover { background: rgba(255,255,255,0.1); }
+        .admin-card.active { border-color: var(--color-primary); box-shadow: 0 0 20px var(--color-primary-glow); }
+        .admin-card .name { font-weight: 600; font-size: 14px; color: #fff; }
+        .admin-card .meta { font-size: 12px; color: var(--color-text-muted); margin-top: 4px; }
+        .admin-card .owner { font-size: 12px; color: #ffd700; margin-top: 2px; }
+        .stat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 16px; }
+        .stat { background: var(--glass-bg); border: 1px solid var(--glass-border); border-radius: var(--radius); padding: 12px; text-align: center; }
+        .stat .val { font-size: 20px; font-weight: bold; color: var(--color-primary); }
+        .stat .lbl { font-size: 11px; color: var(--color-text-muted); margin-top: 4px; }
+        .form-group { margin-bottom: 10px; }
+        .form-group label { display: block; font-size: 12px; color: var(--color-text-muted); margin-bottom: 4px; }
+        .form-group input, .form-group textarea { width: 100%; padding: 10px; border: 1px solid var(--color-border); border-radius: var(--radius); font-size: 13px; box-sizing: border-box; background: rgba(255,255,255,0.05); color: #fff; font-family: inherit; outline: none; }
+        .form-group input:focus, .form-group textarea:focus { border-color: var(--color-primary); box-shadow: 0 0 0 3px var(--color-primary-glow); }
+        .form-group textarea { font-family: inherit; }
+        .admin-sidebar .btn { padding: 8px 16px; border: none; border-radius: var(--radius); cursor: pointer; font-size: 13px; font-weight: 600; transition: transform 0.15s, box-shadow 0.2s; }
+        .admin-sidebar .btn:active { transform: scale(0.98); }
+        .admin-sidebar .btn-primary { background: var(--gradient-primary); color: #0a0a1a; }
+        .admin-sidebar .btn-primary:hover { box-shadow: 0 4px 16px var(--color-primary-glow); }
+        .admin-sidebar .btn-danger { background: var(--gradient-danger); color: #fff; }
+        .admin-sidebar .btn-sm { padding: 4px 10px; font-size: 11px; }
+        .admin-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+        #adminLogin { display: flex; align-items: center; justify-content: center; height: 100dvh; flex-direction: column; gap: 12px; }
+        #adminLogin h2 { font-family: 'Space Grotesk', sans-serif; background: var(--gradient-primary); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+        #adminLogin input { padding: 12px; border: 1px solid var(--color-border); border-radius: var(--radius); width: 280px; box-sizing: border-box; background: rgba(255,255,255,0.05); color: #fff; font-size: 14px; outline: none; }
+        #adminLogin input:focus { border-color: var(--color-primary); box-shadow: 0 0 0 3px var(--color-primary-glow); }
+        #adminLogin button { padding: 12px 24px; background: var(--gradient-primary); color: #0a0a1a; border: none; border-radius: var(--radius); cursor: pointer; font-weight: 700; font-size: 14px; }
+        #map { height: 100%; width: 100%; }
+        .hidden { display: none !important; }
+        .draw-hint { position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.8); backdrop-filter: blur(8px); color: #fff; padding: 8px 16px; border-radius: var(--radius); font-size: 13px; z-index: 1000; pointer-events: none; border: 1px solid var(--glass-border); }
+        .tabs { display: flex; border: 1px solid var(--glass-border); border-radius: var(--radius); overflow: hidden; margin-bottom: 12px; }
+        .tab-btn { flex: 1; padding: 10px; border: none; background: transparent; color: var(--color-text-muted); font-size: 13px; font-weight: 600; cursor: pointer; transition: background 0.2s, color 0.2s; }
+        .tab-btn.active { background: var(--gradient-primary); color: #0a0a1a; }
+        .tab-btn:hover:not(.active) { background: rgba(255,255,255,0.05); color: #fff; }
+        .payout-item { padding: 10px; border-radius: var(--radius); background: var(--glass-bg); border: 1px solid var(--glass-border); margin-bottom: 6px; font-size: 13px; }
+        .payout-item .payout-user { color: #fff; font-weight: 600; }
+        .payout-item .payout-amount { color: var(--color-primary); font-weight: 700; }
+        .payout-item .payout-wallet { color: var(--color-text-muted); font-size: 11px; }
+        .payout-item .payout-actions { margin-top: 8px; display: flex; gap: 6px; }
+        .payout-item .payout-time { font-size: 11px; color: var(--color-text-light); }
+        #zoneForm { background: var(--glass-bg); border: 1px solid var(--glass-border); border-radius: var(--radius); padding: 16px; margin-top: 12px; }
+        #zoneForm h3 { font-family: 'Space Grotesk', sans-serif; margin-bottom: 12px; }
+    </style>
+</head>
+<body>
+    <div id="adminLogin">
+        <h2>🔐 Админка Velo.io</h2>
+        <input type="email" id="adminEmail" placeholder="admin@vel.io" value="admin@vel.io" />
+        <input type="password" id="adminPassword" placeholder="Пароль" />
+        <button id="adminLoginBtn">Войти</button>
+        <div id="adminLoginError" style="color:#f44336;font-size:13px;display:none;"></div>
+    </div>
+
+    <div id="adminApp" class="admin-layout" style="display:none;">
+        <div class="admin-sidebar">
+            <div class="admin-header">
+                <h2>⚙️ Админка</h2>
+                <button id="adminLogoutBtn" class="btn btn-sm btn-danger">Выйти</button>
+            </div>
+
+            <div class="stat-grid" id="dashboardStats">
+                <div class="stat"><div class="val" id="statActive">0</div><div class="lbl">Активных зон</div></div>
+                <div class="stat"><div class="val" id="statRevenue">0₽</div><div class="lbl">Доход платформы/мес</div></div>
+                <div class="stat"><div class="val" id="statEarned">0₽</div><div class="lbl">Заработано пользователями</div></div>
+                <div class="stat"><div class="val" id="statPaid">0₽</div><div class="lbl">Выплачено всего</div></div>
+            </div>
+
+            <div style="display:flex;gap:4px;margin-bottom:10px;">
+                <button id="tabZonesBtn" class="btn btn-sm" style="flex:1;background:#4CAF50;color:white;">📍 Зоны</button>
+                <button id="tabPayoutsBtn" class="btn btn-sm" style="flex:1;background:#ddd;">💸 Выплаты</button>
+            </div>
+
+            <div id="sectionZones">
+                <button id="newZoneBtn" class="btn btn-primary" style="width:100%;margin-bottom:12px;">+ Новая спонсорская зона</button>
+                <div id="zonesList">Загрузка...</div>
+            </div>
+
+            <div id="sectionPayouts" style="display:none;">
+                <div id="payoutsList">Загрузка...</div>
+            </div>
+
+            <div id="zoneForm" class="hidden" style="border-top:1px solid #ddd;margin-top:12px;padding-top:12px;">
+                <h3 id="formTitle">Новая спонсорская зона</h3>
+                <div class="form-group">
+                    <label>Название бизнеса</label>
+                    <input type="text" id="fBusinessName" placeholder="Кофейня у дороги" />
+                </div>
+                <div class="form-group">
+                    <label>Описание</label>
+                    <textarea id="fDescription" rows="2" placeholder="Описание бизнеса"></textarea>
+                </div>
+                <div class="form-group">
+                    <label>Тариф — 10% получает владелец территории</label>
+                    <select id="fBudget" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:6px;font-size:13px;"></select>
+                </div>
+                <div class="form-group">
+                    <label>Цвет на карте</label>
+                    <input type="color" id="fColor" value="#FFD700" />
+                </div>
+                <div class="form-group">
+                    <label>Логотип (URL)</label>
+                    <input type="text" id="fImage" placeholder="https://..." />
+                </div>
+                <div class="form-group">
+                    <label>Сайт (URL)</label>
+                    <input type="text" id="fLink" placeholder="https://..." />
+                </div>
+                <div style="font-size:12px;color:#666;margin-bottom:10px;background:#FFF8E1;padding:8px;border-radius:6px;">
+                    💡 Кликните по карте чтобы поставить маркер бизнеса.
+                </div>
+                <div style="display:flex;gap:8px;">
+                    <button id="fSaveBtn" class="btn btn-primary" style="flex:1;">Сохранить</button>
+                    <button id="fCancelBtn" class="btn" style="flex:1;background:#ddd;">Отмена</button>
+                </div>
+                <button id="fDeleteBtn" class="btn btn-danger btn-sm hidden" style="margin-top:8px;width:100%;">🗑 Удалить зону</button>
+            </div>
+        </div>
+        <div class="admin-map" id="adminMapContainer">
+            <div id="map"></div>
+            <div class="draw-hint">Нажмите «+ Новая зона» чтобы поставить маркер на карте</div>
+        </div>
+    </div>
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script type="module" src="js/admin.js"></script>
+</body>
+</html>

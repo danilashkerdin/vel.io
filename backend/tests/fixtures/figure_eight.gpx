@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<gpx version="1.1" creator="Velo.io">
+  <trk><name>Восьмёрка</name><trkseg>
+    <trkpt lat="55.80000" lon="37.55000"></trkpt>
+    <trkpt lat="55.81000" lon="37.55500"></trkpt>
+    <trkpt lat="55.80000" lon="37.56000"></trkpt>
+    <trkpt lat="55.79000" lon="37.55500"></trkpt>
+    <trkpt lat="55.80000" lon="37.55000"></trkpt>
+    <trkpt lat="55.81000" lon="37.56500"></trkpt>
+    <trkpt lat="55.80000" lon="37.57000"></trkpt>
+    <trkpt lat="55.79000" lon="37.56500"></trkpt>
+    <trkpt lat="55.80000" lon="37.55000"></trkpt>
+  </trkseg></trk>
+</gpx>

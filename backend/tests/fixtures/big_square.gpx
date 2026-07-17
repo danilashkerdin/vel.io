@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<gpx version="1.1" creator="Velo.io">
+  <trk><name>Большой квадрат</name><trkseg>
+    <trkpt lat="55.74800" lon="37.61500"></trkpt>
+    <trkpt lat="55.74800" lon="37.63000"></trkpt>
+    <trkpt lat="55.73800" lon="37.63000"></trkpt>
+    <trkpt lat="55.73800" lon="37.61500"></trkpt>
+    <trkpt lat="55.74800" lon="37.61500"></trkpt>
+  </trkseg></trk>
+</gpx>

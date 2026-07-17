@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<gpx version="1.1" creator="Velo.io">
+  <trk><name>Половина внутри</name><trkseg>
+    <trkpt lat="55.75000" lon="37.62000"></trkpt>
+    <trkpt lat="55.75000" lon="37.62800"></trkpt>
+    <trkpt lat="55.74200" lon="37.62800"></trkpt>
+    <trkpt lat="55.74200" lon="37.62000"></trkpt>
+    <trkpt lat="55.75000" lon="37.62000"></trkpt>
+  </trkseg></trk>
+</gpx>

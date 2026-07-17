@@ -1,0 +1,391 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+    <meta name="theme-color" content="#4a90e2">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Velo.io">
+    <meta name="description" content="Игра для велосипедистов. Захватывай территории, соревнуйся с другими и зарабатывай.">
+    <meta name="robots" content="index, follow">
+    <meta property="og:title" content="Velo.io — Захвати территорию">
+    <meta property="og:description" content="Велосипедная игра: запиши маршрут, получи территорию, перехватывай чужие.">
+    <meta property="og:type" content="website">
+    <link rel="manifest" href="/manifest.json">
+    <link rel="icon" type="image/svg+xml" href="/icons/icon-192.svg">
+    <link rel="apple-touch-icon" href="/icons/icon-192.png">
+    <link rel="preconnect" href="https://unpkg.com" />
+    <link rel="preconnect" href="https://tile.openstreetmap.org" />
+    <title>Velo.io</title>
+    <link rel="preconnect" href="https://unpkg.com" />
+    <link rel="preconnect" href="https://tile.openstreetmap.org" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <link rel="stylesheet" href="css/base.css" />
+    <link rel="stylesheet" href="css/main.css" />
+</head>
+<body>
+    <div id="map"></div>
+
+    <button class="fab" id="fabBtn">+</button>
+    <button class="burger" id="burgerBtn">☰</button>
+
+    <div class="side-menu" id="sideMenu">
+        <div class="menu-header">
+            <h2>🚴 Velo.io</h2>
+            <button class="menu-close" id="closeMenuBtn">✕</button>
+        </div>
+        <div class="menu-body">
+            <div class="menu-user-row">
+                <span class="menu-user" id="menuUsername"></span>
+                <button id="menuNotifications" class="notif-bell">
+                    🔔
+                    <span id="notifBadge" class="notif-badge" style="display:none;">0</span>
+                </button>
+            </div>
+            <div class="menu-stats" id="menuStats"></div>
+
+            <div class="menu-section" id="cyclistMainSection">
+                <span class="menu-section-title">Основное</span>
+                <button class="menu-item" id="menuUploadBtn">📤 Загрузить GPX</button>
+                <button class="menu-item" id="menuActivity">🔥 Активность</button>
+                <button class="menu-item" id="menuLeaderboard">🏆 Рейтинг</button>
+            </div>
+
+            <div class="menu-section" id="cyclistMySection">
+                <span class="menu-section-title">Моё</span>
+                <button class="menu-item" id="menuMyTerritories">📋 Мои территории</button>
+                <button class="menu-item menu-premium" id="menuPremium">⭐ Premium</button>
+                <button class="menu-item menu-premium" id="menuBalance">💰 Мой доход</button>
+                <button class="menu-item menu-premium" id="menuReferral">👥 Пригласить друга</button>
+            </div>
+
+            <div class="menu-section" id="advertiserSection" style="display:none;">
+                <span class="menu-section-title">Рекламодателю</span>
+                <button class="menu-item menu-advertiser" id="createSponsoredBtn">🏪 Создать зону</button>
+                <button class="menu-item menu-advertiser" id="myAdvertiserZonesBtn">📋 Мои зоны</button>
+                <button class="menu-item menu-advertiser" id="advertiserDashboardBtn">📊 Дашборд</button>
+                <button class="menu-item menu-advertiser" id="advertiserProfileBtn">⚙️ Профиль бизнеса</button>
+            </div>
+
+            <div class="menu-section">
+                <span class="menu-section-title">Поддержка</span>
+                <button class="menu-item" id="menuContacts">📞 Контакты</button>
+            </div>
+        </div>
+        <div class="menu-footer">
+            <a href="https://gripchek.ru" target="_blank" class="gripchek-link">🔧 GripChek</a>
+            <button class="logout-btn" id="menuLogout">🚪 Выйти</button>
+        </div>
+    </div>
+
+    <div class="overlay" id="overlay"></div>
+
+    <input type="file" id="fileInput" accept=".gpx,.xml" style="display:none" />
+
+    <div class="modal" id="uploadModal">
+        <div class="modal-content">
+            <button class="modal-close" id="closeUploadModal">✕</button>
+            <h3>📤 Загрузить GPX</h3>
+            <div class="drop-area" id="dropArea">
+                <div class="drop-icon">📂</div>
+                <p>Перетащите файл или кликните</p>
+            </div>
+            <div class="progress-bar" id="uploadProgress" style="display:none;">
+                <div class="progress-fill" id="progressFill"></div>
+            </div>
+            <div id="fileName"></div>
+            <button id="processBtn" class="btn btn-primary" disabled>Захватить территорию</button>
+            <div id="uploadStatus" class="upload-status"></div>
+        </div>
+    </div>
+
+    <div class="modal" id="editorModal">
+        <div class="modal-content">
+            <button class="modal-close" id="closeEditorModal">✕</button>
+            <h3>✏️ Редактировать</h3>
+            <input type="text" id="editName" placeholder="Название" />
+            <div class="color-row">
+                <input type="color" id="editColor" value="#4CAF50" />
+                <label>Цвет</label>
+            </div>
+            <input type="text" id="editImage" placeholder="URL картинки" />
+            <textarea id="editDescription" placeholder="Текст" rows="3"></textarea>
+            <input type="text" id="editLink" placeholder="Ссылка https://..." />
+            <button id="saveEditBtn" class="btn btn-primary">Сохранить</button>
+        </div>
+    </div>
+
+    <div class="modal" id="onboardingModal">
+        <div class="modal-content">
+            <button class="modal-close" id="closeOnboardingModal">✕</button>
+            <h3 style="text-align:center;">🚴 Добро пожаловать в Velo.io!</h3>
+            <div style="padding:0 4px;">
+                <div style="display:flex;align-items:flex-start;gap:12px;padding:12px 0;border-bottom:1px solid var(--color-border);">
+                    <div style="width:40px;height:40px;border-radius:50%;background:var(--gradient-primary);display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0;">1</div>
+                    <div>
+                        <div style="font-weight:600;font-size:14px;">Нажми <strong>+</strong> чтобы начать запись</div>
+                        <div style="font-size:13px;color:var(--color-text-muted);margin-top:2px;">Приложение начнёт отслеживать твоё местоположение</div>
+                    </div>
+                </div>
+                <div style="display:flex;align-items:flex-start;gap:12px;padding:12px 0;border-bottom:1px solid var(--color-border);">
+                    <div style="width:40px;height:40px;border-radius:50%;background:var(--gradient-primary);display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0;">2</div>
+                    <div>
+                        <div style="font-weight:600;font-size:14px;">Поезжай по маршруту</div>
+                        <div style="font-size:13px;color:var(--color-text-muted);margin-top:2px;">Твой трек рисуется на карте. Вернись к начальной точке — контур замкнётся</div>
+                    </div>
+                </div>
+                <div style="display:flex;align-items:flex-start;gap:12px;padding:12px 0;border-bottom:1px solid var(--color-border);">
+                    <div style="width:40px;height:40px;border-radius:50%;background:var(--gradient-primary);display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0;">3</div>
+                    <div>
+                        <div style="font-weight:600;font-size:14px;">Получи территорию</div>
+                        <div style="font-size:13px;color:var(--color-text-muted);margin-top:2px;">Нажми ⏹ — сервер найдёт замкнутый контур и закрепит район за тобой</div>
+                    </div>
+                </div>
+                <div style="display:flex;align-items:flex-start;gap:12px;padding:12px 0;">
+                    <div style="width:40px;height:40px;border-radius:50%;background:var(--gradient-primary);display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0;">4</div>
+                    <div>
+                        <div style="font-weight:600;font-size:14px;">Соревнуйся и зарабатывай</div>
+                        <div style="font-size:13px;color:var(--color-text-muted);margin-top:2px;">Территория живёт 14 дней. Перехватывай чужие районы, получай долю с рекламы</div>
+                    </div>
+                </div>
+            </div>
+            <button id="startBtn" class="btn btn-gold" style="width:100%;margin-top:16px;">🚴 Поехали!</button>
+            <p style="font-size:12px;color:var(--color-text-light);text-align:center;margin-top:8px;">Можно загрузить и готовый GPX-файл</p>
+        </div>
+    </div>
+
+    <div class="modal" id="activityModal">
+        <div class="modal-content">
+            <button class="modal-close" id="closeActivityModal">✕</button>
+            <h3>🔥 Активность</h3>
+            <div id="activityContent">Загрузка...</div>
+        </div>
+    </div>
+
+    <div class="modal" id="leaderboardModal">
+        <div class="modal-content">
+            <button class="modal-close" id="closeLeaderboardModal">✕</button>
+            <h3>🏆 Рейтинг</h3>
+            <div id="leaderboardContent">Загрузка...</div>
+        </div>
+    </div>
+
+    <div class="modal" id="premiumModal">
+        <div class="modal-content">
+            <button class="modal-close" id="closePremiumModal">✕</button>
+            <h3>⭐ Premium</h3>
+            <div class="premium-header">⭐</div>
+            <h4>Безлимитные захваты территорий</h4>
+            <p style="color:var(--color-text-muted);font-size:14px;margin-bottom:16px;text-align:center;">
+                В бесплатной версии — <strong id="premiumFreeLimit">1</strong> захват(а) в неделю.
+                Приводи друзей — получай +1 захват за каждого.
+                Premium снимает все ограничения.
+            </p>
+            <div class="premium-price" id="premiumPrice">200 ⭐</div>
+            <p style="color:var(--color-text-muted);font-size:13px;text-align:center;margin-bottom:16px;">Разовый платёж · Навсегда</p>
+            <ul class="premium-features">
+                <li>Безлимитные захваты территорий</li>
+                <li>Приоритетная поддержка</li>
+            </ul>
+            <button id="buyPremiumBtn" class="btn btn-gold">⭐ Купить Premium · 200 ⭐</button>
+            <p style="color:var(--color-text-light);font-size:12px;margin-top:12px;text-align:center;">
+                Оплата Telegram Stars
+            </p>
+        </div>
+    </div>
+
+    <div id="recordContainer" style="display:none;position:fixed;bottom:80px;left:50%;transform:translateX(-50%);z-index:9999;flex-direction:column;align-items:center;gap:8px;">
+        <div id="recordStatus" style="display:none;background:rgba(10,10,26,0.96);color:#FFD700;padding:10px 20px;border-radius:12px;font-size:13px;font-weight:600;border:1px solid rgba(255,215,0,0.3);backdrop-filter:blur(12px);align-items:center;gap:8px;">
+            <span style="display:inline-block;width:10px;height:10px;background:#ff4444;border-radius:50%;animation:pulse 1s infinite;"></span>
+            Запись...
+        </div>
+        <button id="stopRecordBtn" style="display:none;padding:14px 28px;background:#ff4444;border:none;border-radius:50px;color:#fff;font-size:15px;font-weight:700;cursor:pointer;box-shadow:0 4px 20px rgba(255,68,68,0.4);align-items:center;gap:8px;">
+            ⏹ Завершить и захватить
+        </button>
+    </div>
+
+    <div class="modal" id="referralModal">
+        <div class="modal-content">
+            <button class="modal-close" id="closeReferralModal">✕</button>
+            <h3>👥 Пригласить друга</h3>
+            <div style="text-align:center;padding:8px 0;">
+                <div style="font-size:40px;margin-bottom:8px;">🚴</div>
+                <p style="font-size:14px;color:var(--color-text-muted);margin-bottom:16px;">
+                    Лимит захватов исчерпан?<br>
+                    Пригласи друга — получи <strong style="color:var(--color-primary);">+1 бонусный захват</strong>!
+                </p>
+                <div id="referralLinkBox" style="background:var(--glass-bg);border:1px solid var(--color-border);border-radius:var(--radius);padding:12px;margin-bottom:12px;word-break:break-all;font-size:13px;"></div>
+                <button id="copyReferralBtn" class="btn btn-primary">📋 Скопировать ссылку</button>
+                <button id="shareReferralTelegram" class="btn btn-telegram" style="margin-top:8px;">📱 Отправить в Telegram</button>
+                <p style="font-size:12px;color:var(--color-text-light);margin-top:16px;">
+                    Друг регистрируется по ссылке → ты получаешь +1 захват
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal" id="userProfileModal">
+        <div class="modal-content">
+            <button class="modal-close" id="closeUserProfileModal">✕</button>
+            <h3 id="userProfileTitle">👤 Пользователь</h3>
+            <div id="userProfileStats" style="display:flex;gap:16px;justify-content:center;padding:12px 0;border-bottom:1px solid var(--color-border);margin-bottom:12px;">
+                <div style="text-align:center;"><div id="upTerritories" style="font-size:20px;font-weight:700;color:var(--color-primary);">0</div><div style="font-size:11px;color:var(--color-text-muted);">территорий</div></div>
+                <div style="text-align:center;"><div id="upArea" style="font-size:20px;font-weight:700;color:var(--color-primary);">0</div><div style="font-size:11px;color:var(--color-text-muted);">км²</div></div>
+            </div>
+            <div id="userProfileContent">Загрузка...</div>
+        </div>
+    </div>
+
+    <div class="modal" id="contactsModal">
+        <div class="modal-content">
+            <button class="modal-close" id="closeContactsModal">✕</button>
+            <h3>📞 Контакты</h3>
+            <div style="line-height:1.8;font-size:14px;">
+                <p>📧 <a href="mailto:danila.shkerdin.01@mail.ru" style="color:var(--color-primary);">danila.shkerdin.01@mail.ru</a></p>
+                <p>💬 Telegram: <a href="https://t.me/dashkerdin" target="_blank" style="color:var(--color-primary);">@dashkerdin</a></p>
+                <hr style="margin:12px 0;border:none;border-top:1px solid var(--color-border);" />
+
+                <p style="font-size:12px;color:var(--color-text-muted);"><a href="/offer.html" target="_blank" style="color:var(--color-primary);">📄 Пользовательское соглашение</a></p>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal" id="shareModal">
+        <div class="modal-content">
+            <button class="modal-close" id="closeShareModal">✕</button>
+            <h3>🎉 Территория захвачена!</h3>
+            <div class="share-result">
+                <div class="share-icon">🏴</div>
+                <div class="share-area" id="shareArea"></div>
+                <div class="share-label">захваченной территории</div>
+            </div>
+            <div id="shareRewards" class="share-rewards"></div>
+            <div style="display:flex;flex-direction:column;gap:8px;">
+                <button id="shareTelegramBtn" class="btn btn-telegram">📱 Поделиться в Telegram</button>
+                <button id="shareCopyBtn" class="btn btn-outline">🔗 Скопировать ссылку</button>
+            </div>
+        </div>
+    </div>
+    <div class="modal" id="myTerritoriesModal">
+        <div class="modal-content">
+            <button class="modal-close" id="closeMyTerritoriesModal">✕</button>
+            <h3>📋 Мои территории</h3>
+            <div id="myTerritoriesContent" style="max-height:60vh;overflow-y:auto;">Загрузка...</div>
+        </div>
+    </div>
+
+    <div class="modal" id="balanceModal">
+        <div class="modal-content">
+            <button class="modal-close" id="closeBalanceModal">✕</button>
+            <h3>💰 Мой доход</h3>
+            <div id="balanceContent">Загрузка...</div>
+        </div>
+    </div>
+
+    <div class="modal" id="notificationsModal">
+        <div class="modal-content">
+            <button class="modal-close" id="closeNotificationsModal">✕</button>
+            <h3>🔔 Уведомления</h3>
+            <button id="readAllBtn" class="btn btn-outline" style="margin-bottom:12px;">Прочитать всё</button>
+            <div id="notificationsContent" style="max-height:60vh;overflow-y:auto;">Загрузка...</div>
+        </div>
+    </div>
+
+    <div class="modal" id="sponsoredModal">
+        <div class="modal-content">
+            <button class="modal-close" id="closeSponsoredModal">✕</button>
+            <h3>🏪 Создать спонсорскую зону</h3>
+            <p style="font-size:13px;color:var(--color-text-muted);margin-bottom:12px;">
+                Кликните на карте, чтобы поставить точку, выберите тариф и оплатите Stars.
+                Размер точки на карте зависит от выбранного тарифа.
+            </p>
+            <div id="sponsoredDrawStatus" style="font-size:13px;color:var(--color-primary);margin-bottom:12px;padding:10px;background:var(--glass-bg);border-radius:var(--radius);">
+                Кликните на карте, чтобы указать место зоны
+            </div>
+            <div style="margin-bottom:12px;">
+                <button id="sponsoredDrawClearBtn" class="btn btn-outline" style="width:100%;">🔄 Убрать точку</button>
+            </div>
+            <input type="text" id="sponsoredName" placeholder="Название бизнеса" />
+            <div class="tier-selector" id="tierSelector" style="margin-bottom:12px;">
+                <div class="tier-card" data-stars="1000" data-selected="false">
+                    <div class="tier-name">Старт</div>
+                    <div class="tier-stars">1000 ⭐</div>
+                    <div class="tier-size">Маленькая точка</div>
+                </div>
+                <div class="tier-card selected" data-stars="3000" data-selected="true">
+                    <div class="tier-name">Стандарт</div>
+                    <div class="tier-stars">3000 ⭐</div>
+                    <div class="tier-size">Средняя точка</div>
+                </div>
+                <div class="tier-card" data-stars="5000" data-selected="false">
+                    <div class="tier-name">Премиум</div>
+                    <div class="tier-stars">5000 ⭐</div>
+                    <div class="tier-size">Большая точка</div>
+                </div>
+            </div>
+            <button id="sponsoredPayBtn" class="btn btn-gold">💳 Оплатить Stars и создать</button>
+        </div>
+    </div>
+
+    <div class="modal" id="advertiserZonesModal">
+        <div class="modal-content">
+            <button class="modal-close" id="closeAdvertiserZonesModal">✕</button>
+            <h3>📋 Мои спонсорские зоны</h3>
+            <div id="advertiserZonesContent" style="max-height:50vh;overflow-y:auto;">Загрузка...</div>
+        </div>
+    </div>
+
+    <div class="modal" id="editAdvertiserZoneModal">
+        <div class="modal-content">
+            <button class="modal-close" id="closeEditAdvertiserZoneModal">✕</button>
+            <h3>✏️ Редактировать зону</h3>
+            <input type="text" id="azBusinessName" placeholder="Название бизнеса" />
+            <textarea id="azDescription" placeholder="Описание" rows="3"></textarea>
+            <input type="text" id="azImageUrl" placeholder="URL картинки" />
+            <input type="text" id="azLinkUrl" placeholder="Ссылкка https://..." />
+            <div class="color-row">
+                <input type="color" id="azColor" value="#FFD700" />
+                <label>Цвет на карте</label>
+            </div>
+            <button id="saveAdvertiserZoneBtn" class="btn btn-primary">Сохранить</button>
+        </div>
+    </div>
+
+    <div class="modal" id="advertiserDashboardModal">
+        <div class="modal-content">
+            <button class="modal-close" id="closeAdvertiserDashboardModal">✕</button>
+            <h3>📊 Дашборд рекламодателя</h3>
+            <div id="advertiserDashboardContent">Загрузка...</div>
+        </div>
+    </div>
+
+    <div class="modal" id="advertiserProfileModal">
+        <div class="modal-content">
+            <button class="modal-close" id="closeAdvertiserProfileModal">✕</button>
+            <h3>⚙️ Профиль бизнеса</h3>
+            <input type="text" id="advProfileBusinessName" placeholder="Название бизнеса" />
+            <input type="text" id="advProfilePhone" placeholder="Телефон" />
+            <input type="text" id="advProfileTelegram" placeholder="Telegram @username" />
+            <input type="text" id="advProfileWebsite" placeholder="Сайт / соцсеть" />
+            <textarea id="advProfileDescription" placeholder="Описание бизнеса" rows="3"></textarea>
+            <button id="saveAdvertiserProfileBtn" class="btn btn-primary">Сохранить</button>
+        </div>
+    </div>
+
+    <div class="modal" id="topUpZoneModal">
+        <div class="modal-content">
+            <button class="modal-close" id="closeTopUpZoneModal">✕</button>
+            <h3>➕ Пополнить бюджет зоны</h3>
+            <input type="number" id="topUpStars" placeholder="Сумма в Stars" min="1000" />
+            <button id="confirmTopUpBtn" class="btn btn-gold">Создать счёт на оплату</button>
+        </div>
+    </div>
+
+    <div id="toastContainer"></div>
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script type="module" src="js/app.js"></script>
+</body>
+</html>
