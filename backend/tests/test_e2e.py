@@ -430,20 +430,20 @@ class TestActivity:
         items = r.json()
         assert len(items) >= 1
 
-        def test_activity_pagination(self):
-            t1 = token("act_pag1@test.com")
-            t2 = token("act_pag2@test.com")
-            capture_ride(t1, SQUARE)
-            capture_ride(t2, [[55.75, 37.60], [55.75, 37.61], [55.74, 37.61],
-                             [55.74, 37.60], [55.75, 37.60]])
+    def test_activity_pagination(self):
+        t1 = token("act_pag1@test.com")
+        t2 = token("act_pag2@test.com")
+        capture_ride(t1, SQUARE)
+        capture_ride(t2, [[55.75, 37.60], [55.75, 37.61], [55.74, 37.61],
+                         [55.74, 37.60], [55.75, 37.60]])
 
-            r = client.get("/api/activity?limit=10")
-            items = r.json()
-            assert len(items) >= 2
+        r = client.get("/api/activity?limit=10")
+        items = r.json()
+        assert len(items) >= 2
 
-            r1 = client.get("/api/activity?limit=1")
-            items1 = r1.json()
-            assert len(items1) == 1
+        r1 = client.get("/api/activity?limit=1")
+        items1 = r1.json()
+        assert len(items1) == 1
 
 
 # ── 9. Territory query (bbox) ───────────────────────────────────────────────

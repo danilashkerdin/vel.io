@@ -79,8 +79,26 @@ cd frontend && python3 -m http.server 3000
 ## Testing
 ```bash
 cd backend
-pytest tests/ -v --ignore=tests/test_api.py   # unit tests (no DB)
-pytest tests/ -v                               # all tests (needs PostGIS)
+
+# Unit tests (no DB required)
+pytest tests/test_auth.py tests/test_gpx_parser.py tests/test_loop_detector.py tests/test_merger.py tests/test_pipeline.py -v
+
+# E2E tests (requires PostGIS on localhost:5432)
+# DB: postgresql://postgres:postgres@localhost:5432/velo_io_test
+pytest tests/test_e2e.py -v
+
+# All tests (requires PostGIS)
+pytest tests/ -v
+
+# Run specific test class
+pytest tests/test_e2e.py::TestAuth -v
+pytest tests/test_e2e.py::TestOverlap -v
+
+# Start PostGIS via Docker if not running:
+docker-compose up -d db
+
+# Run tests via Docker (DB auto-resets):
+docker-compose run --rm backend pytest tests/test_e2e.py -v
 ```
 
 ## Key APIs
