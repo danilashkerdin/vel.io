@@ -1,5 +1,6 @@
 import asyncio
 import hashlib
+import logging
 import time
 from datetime import datetime, timezone, timedelta
 
@@ -31,6 +32,8 @@ from services.achievement_service import check_achievements_on_capture
 from limiter import limiter
 
 router = APIRouter(tags=["territories"])
+
+logger = logging.getLogger("velo_io")
 
 pipeline = TerritoryPipeline()
 
