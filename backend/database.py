@@ -93,7 +93,7 @@ def init_db():
     _activate_demo_zone()
 
 
-def _fix_column_type(table: str, column: str, old_type: str, new_type: str):
+def _fix_column_type(table: str, column: str, new_type: str):
     """Исправляет тип колонки, если она не того типа."""
     with engine.connect() as conn:
         row = conn.execute(
