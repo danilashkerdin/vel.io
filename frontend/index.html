@@ -28,63 +28,38 @@
 <body>
     <div id="map"></div>
 
-    <button class="fab" id="fabBtn">+</button>
-    <button class="burger" id="burgerBtn">☰</button>
-
-    <div class="side-menu" id="sideMenu">
-        <div class="menu-header">
-            <h2>🚴 Velo.io</h2>
-            <button class="menu-close" id="closeMenuBtn">✕</button>
-        </div>
-        <div class="menu-body">
-            <div class="menu-user-row">
-                <span class="menu-user" id="menuUsername"></span>
-                <button id="menuNotifications" class="notif-bell">
-                    🔔
-                    <span id="notifBadge" class="notif-badge" style="display:none;">0</span>
-                </button>
-            </div>
-            <div class="menu-stats" id="menuStats"></div>
-
-            <div class="menu-section" id="cyclistMainSection">
-                <span class="menu-section-title">Основное</span>
-                <button class="menu-item" id="menuUploadBtn">📤 Загрузить GPX</button>
-                <button class="menu-item" id="menuPlannerBtn">🗺 Спланировать маршрут</button>
-                <button class="menu-item" id="menuActivity">🔥 Активность</button>
-                <button class="menu-item" id="menuLeaderboard">🏆 Рейтинг</button>
-            </div>
-
-            <div class="menu-section" id="cyclistMySection">
-                <span class="menu-section-title">Моё</span>
-                <button class="menu-item" id="menuMyTerritories">📋 Мои территории</button>
-                <button class="menu-item menu-premium" id="menuPremium">⭐ Premium</button>
-                <button class="menu-item menu-premium" id="menuBalance">💰 Мой доход</button>
-                <button class="menu-item" id="menuAchievements">🏆 Ачивки</button>
-                <button class="menu-item menu-premium" id="menuReferral">👥 Пригласить друга</button>
-            </div>
-
-            <div class="menu-section" id="advertiserSection" style="display:none;">
-                <span class="menu-section-title">Рекламодателю</span>
-                <button class="menu-item menu-advertiser" id="createSponsoredBtn">🏪 Создать зону</button>
-                <button class="menu-item menu-advertiser" id="myAdvertiserZonesBtn">📋 Мои зоны</button>
-                <button class="menu-item menu-advertiser" id="advertiserDashboardBtn">📊 Дашборд</button>
-                <button class="menu-item menu-advertiser" id="advertiserProfileBtn">⚙️ Профиль бизнеса</button>
-            </div>
-
-            <div class="menu-section">
-                <span class="menu-section-title">Поддержка</span>
-                <button class="menu-item" id="menuContacts">📞 Контакты</button>
-            </div>
-        </div>
-        <div class="menu-footer">
-            <a href="https://gripchek.ru" target="_blank" class="gripchek-link">🔧 GripChek</a>
-            <button class="logout-btn" id="menuLogout">🚪 Выйти</button>
+    <!-- Bottom sheet (всплывает снизу по FAB) -->
+    <div class="bottom-sheet" id="actionSheet">
+        <div class="bs-overlay" id="bsOverlay"></div>
+        <div class="bs-content">
+            <div class="bs-handle"></div>
+            <div class="bs-title">Захватить территорию</div>
+            <button class="bs-btn" id="bsRecordBtn">📍 Начать трек</button>
+            <button class="bs-btn" id="bsPlannerBtn">🗺 Построить маршрут</button>
+            <button class="bs-btn" id="bsUploadBtn">📤 Загрузить GPX</button>
         </div>
     </div>
 
-    <div class="overlay" id="overlay"></div>
-
+    <button class="fab" id="fabBtn">+</button>
     <input type="file" id="fileInput" accept=".gpx,.xml" style="display:none" />
+
+    <!-- Tab Bar -->
+    <div class="tab-bar" id="tabBar">
+        <button class="tab-btn active" data-tab="map">
+            <span class="tab-icon">📍</span>
+            <span class="tab-label">Карта</span>
+        </button>
+        <button class="tab-btn" data-tab="activity">
+            <span class="tab-icon">⚡</span>
+            <span class="tab-label">Активность</span>
+        </button>
+        <button class="tab-btn" data-tab="profile">
+            <span class="tab-icon">👤</span>
+            <span class="tab-label">Моё</span>
+        </button>
+    </div>
+
+    <div class="overlay" id="overlay"></div>
 
     <div class="modal" id="uploadModal">
         <div class="modal-content">
@@ -412,6 +387,60 @@
     </div>
 
     <div id="toastContainer"></div>
+
+    <!-- Tab: Активность (скрыт, показывается через display:none/flex) -->
+    <div class="tab-page" id="tabActivity" style="display:none;">
+        <div class="tab-page-header">
+            <div class="tab-page-title">⚡ Активность</div>
+            <div style="display:flex;gap:4px;overflow-x:auto;padding:4px 0;" id="activityTabs">
+                <button class="atab-btn active" data-atab="feed">Лента</button>
+                <button class="atab-btn" data-atab="leaderboard">Рейтинг</button>
+                <button class="atab-btn" data-atab="achievements">Ачивки</button>
+                <button class="atab-btn" data-atab="income">Доход</button>
+                <button class="atab-btn" data-atab="territories">Территории</button>
+            </div>
+        </div>
+        <div class="tab-page-body" id="activityBody">
+            <div class="atab-content active" data-atab="feed" id="atabFeed">Загрузка...</div>
+            <div class="atab-content" data-atab="leaderboard" id="atabLeaderboard">
+                <div style="display:flex;gap:6px;margin-bottom:10px;flex-wrap:wrap;">
+                    <button class="lb-toggle lb-period-btn active" id="lbPeriodAll" data-period="all">Всё время</button>
+                    <button class="lb-toggle lb-period-btn" id="lbPeriodWeek" data-period="week">Неделя</button>
+                    <button class="lb-toggle lb-period-btn" id="lbPeriodMonth" data-period="month">Месяц</button>
+                    <span style="flex:1;"></span>
+                    <button class="lb-toggle lb-sort-btn active" id="lbSortArea" data-sort="area">по площади</button>
+                    <button class="lb-toggle lb-sort-btn" id="lbSortCount" data-sort="count">по кол-ву</button>
+                </div>
+                <div id="leaderboardContent">Загрузка...</div>
+            </div>
+            <div class="atab-content" data-atab="achievements" id="atabAchievements">Загрузка...</div>
+            <div class="atab-content" data-atab="income" id="atabIncome">Загрузка...</div>
+            <div class="atab-content" data-atab="territories" id="atabTerritories">Загрузка...</div>
+        </div>
+    </div>
+
+    <!-- Tab: Моё -->
+    <div class="tab-page" id="tabProfile" style="display:none;">
+        <div class="tab-page-header">
+            <div class="tab-page-title">👤 Моё</div>
+            <span style="font-size:14px;color:var(--color-text-muted);" id="profileUsername"></span>
+        </div>
+        <div class="tab-page-body">
+            <div class="profile-list">
+                <button class="profile-item" id="pfNotifications">🔔 <span>Уведомления</span><span class="pf-badge" id="pfNotifBadge" style="display:none;">0</span></button>
+                <button class="profile-item" id="pfPremium">⭐ <span>Premium</span></button>
+                <button class="profile-item" id="pfReferral">👥 <span>Пригласить друга</span></button>
+                <button class="profile-item" id="pfContacts">📞 <span>Контакты</span></button>
+                <div class="profile-section-title">Рекламодателю</div>
+                <button class="profile-item" id="pfCreateZone">🏪 <span>Создать зону</span></button>
+                <button class="profile-item" id="pfMyZones">📋 <span>Мои зоны</span></button>
+                <button class="profile-item" id="pfDashboard">📊 <span>Дашборд</span></button>
+                <button class="profile-item" id="pfBizProfile">⚙️ <span>Профиль бизнеса</span></button>
+                <div class="profile-section-title">Поддержка</div>
+                <button class="profile-item" id="pfLogout">🚪 <span>Выйти</span></button>
+            </div>
+        </div>
+    </div>
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script type="module" src="js/app.js"></script>
