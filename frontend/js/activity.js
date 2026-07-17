@@ -1,9 +1,11 @@
-import { openModal, showToast } from './ui.js';
+/* global flyToTerritory */
+
 import { API } from './config.js';
+import { showUserProfile } from './profile.js';
 
 export async function loadActivity() {
     const container = document.getElementById("activityContent");
-    if (!container) return;
+    if (!container) {return;}
     container.innerHTML = "Загрузка...";
 
     try {
@@ -72,7 +74,7 @@ function closeModals() {
 }
 
 function escapeHtml(s) {
-    if (!s) return "";
+    if (!s) {return "";}
     return String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 }
 
@@ -80,9 +82,9 @@ function timeSince(dateStr) {
     const now = Date.now();
     const then = new Date(dateStr).getTime();
     const diff = Math.floor((now - then) / 1000);
-    if (diff < 60) return "только что";
-    if (diff < 3600) return `${Math.floor(diff / 60)} мин назад`;
-    if (diff < 86400) return `${Math.floor(diff / 3600)} ч назад`;
-    if (diff < 604800) return `${Math.floor(diff / 86400)} дн назад`;
+    if (diff < 60) {return "только что";}
+    if (diff < 3600) {return `${Math.floor(diff / 60)} мин назад`;}
+    if (diff < 86400) {return `${Math.floor(diff / 3600)} ч назад`;}
+    if (diff < 604800) {return `${Math.floor(diff / 86400)} дн назад`;}
     return new Date(dateStr).toLocaleDateString();
 }

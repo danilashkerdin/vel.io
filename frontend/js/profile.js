@@ -56,6 +56,6 @@ export async function showUserProfile(userId, username) {
 }
 
 function escapeHtml(s) {
-    if (!s) return "";
+    if (!s) {return "";}
     return String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 }
