@@ -3,41 +3,22 @@ import { showToast } from './ui.js';
 import { showShareModal } from './share.js';
 import { API } from './config.js';
 
-const recording = false;
+const STATUS = { IDLE: "idle", RECORDING: "recording", PROCESSING: "processing" };
+let state = STATUS.IDLE;
 let watchId = null;
 let points = [];
 let pathLayer = null;
 let userMarker = null;
 let startTime = null;
+let wasInBackground = false;
+let lastKnownPosition = null;
 
-const STATUS = {
-    IDLE: "idle",
-    RECORDING: "recording",
-    PROCESSING: "processing",
-};
-
-let state = STATUS.IDLE;
-
-export function isRecording() {
-    return state === STATUS.RECORDING;
-}
-
-function getFabBtn() {
-    return document.getElementById("fabBtn");
-}
-
-function getStatusEl() {
-    return document.getElementById("recordStatus");
-}
-
-function getStopBtn() {
-    return document.getElementById("stopRecordBtn");
-}
+export function isRecording() { return state === STATUS.RECORDING; }
 
 function updateUI() {
-    const statusEl = getStatusEl();
-    const fab = getFabBtn();
-    const stopBtn = getStopBtn();
+    const statusEl = document.getElementById("recordStatus");
+    const fab = document.getElementById("fabBtn");
+    const stopBtn = document.getElementById("stopRecordBtn");
 
     if (state === STATUS.RECORDING) {
         if (fab) { fab.textContent = "⏹"; }
@@ -52,10 +33,7 @@ function updateUI() {
     } else if (state === STATUS.PROCESSING) {
         if (fab) { fab.textContent = "⏳"; }
         if (stopBtn) { stopBtn.style.display = "none"; }
-        if (statusEl) {
-            statusEl.textContent = "⏳ Обработка маршрута...";
-            statusEl.style.display = "flex";
-        }
+        if (statusEl) { statusEl.textContent = "⏳ Обработка маршрута..."; statusEl.style.display = "flex"; }
     } else {
         if (fab) { fab.textContent = "+"; }
         if (stopBtn) { stopBtn.style.display = "none"; }
@@ -65,42 +43,22 @@ function updateUI() {
 
 function clearLayers() {
     const map = getMap();
-    if (pathLayer) {
-        try { map?.removeLayer(pathLayer); } catch {}
-        pathLayer = null;
-    }
-    if (userMarker) {
-        try { map?.removeLayer(userMarker); } catch {}
-        userMarker = null;
-    }
+    if (pathLayer) { try { map?.removeLayer(pathLayer); } catch {} pathLayer = null; }
+    if (userMarker) { try { map?.removeLayer(userMarker); } catch {} userMarker = null; }
 }
 
 function updatePathOnMap() {
     const map = getMap();
-    if (!map) {return;}
-
+    if (!map) { return; }
     clearLayers();
-
-    if (points.length < 2) {return;}
-
+    if (points.length < 2) { return; }
     const latlngs = points.map(p => [p.lat, p.lng]);
-    pathLayer = L.polyline(latlngs, {
-        color: "#FFD700",
-        weight: 4,
-        opacity: 0.8,
-        smoothFactor: 1,
-    }).addTo(map);
-
+    pathLayer = L.polyline(latlngs, { color: "#FFD700", weight: 4, opacity: 0.8, smoothFactor: 1 }).addTo(map);
     const last = points[points.length - 1];
     if (userMarker) {
         userMarker.setLatLng([last.lat, last.lng]);
     } else {
-        const icon = L.divIcon({
-            html: '<div style="width:20px;height:20px;background:#FFD700;border:3px solid #fff;border-radius:50%;box-shadow:0 0 8px rgba(0,0,0,0.4);"></div>',
-            iconSize: [20, 20],
-            iconAnchor: [10, 10],
-            className: "",
-        });
+        const icon = L.divIcon({ html: '<div style="width:20px;height:20px;background:#FFD700;border:3px solid #fff;border-radius:50%;box-shadow:0 0 8px rgba(0,0,0,0.4);"></div>', iconSize: [20, 20], iconAnchor: [10, 10], className: "" });
         userMarker = L.marker([last.lat, last.lng], { icon, zIndexOffset: 10000 }).addTo(map);
     }
 }
@@ -108,28 +66,30 @@ function updatePathOnMap() {
 function onPositionSuccess(pos) {
     const { latitude, longitude, accuracy } = pos.coords;
     const now = Date.now();
-
-    points.push({
-        lat: latitude,
-        lng: longitude,
-        timestamp: now,
-        accuracy: accuracy,
-    });
-
+    lastKnownPosition = { lat: latitude, lng: longitude, timestamp: now, accuracy };
+    points.push(lastKnownPosition);
     updatePathOnMap();
     updateUI();
 }
 
 function onPositionError(err) {
     console.error("Geolocation error:", err.message);
-    showToast("⚠ Ошибка GPS: " + err.message, "error");
-    if (err.code === 1) {
-        stopRecording("Доступ к геолокации запрещён");
+    if (err.code === 1) { stopRecording("Доступ к геолокации запрещён"); }
+}
+
+function startWatch() {
+    if (watchId !== null) {
+        navigator.geolocation.clearWatch(watchId);
     }
+    watchId = navigator.geolocation.watchPosition(onPositionSuccess, onPositionError, {
+        enableHighAccuracy: true,
+        timeout: 10000,
+        maximumAge: 5000,
+    });
 }
 
 export function startRecording() {
-    if (state !== STATUS.IDLE) {return;}
+    if (state !== STATUS.IDLE) { return; }
     if (!navigator.geolocation) {
         showToast("⚠ Геолокация не поддерживается браузером", "error");
         return;
@@ -138,73 +98,38 @@ export function startRecording() {
     state = STATUS.RECORDING;
     points = [];
     startTime = Date.now();
+    wasInBackground = false;
 
     document.getElementById("recordContainer").style.display = "block";
 
-    const map = getMap();
-    if (map) {
-        map.on("click", function blockClick(e) {
-            if (state === STATUS.RECORDING) {
-                L.DomEvent.stopPropagation(e);
-            }
-        });
-    }
-
-    watchId = navigator.geolocation.watchPosition(
-        onPositionSuccess,
-        onPositionError,
-        {
-            enableHighAccuracy: true,
-            timeout: 10000,
-            maximumAge: 5000,
-        }
-    );
-
+    startWatch();
     updateUI();
     showToast("🚴 Запись начата! Поехали!", "success");
 }
 
 function stopRecording(errorMsg) {
-    if (state === STATUS.IDLE) {return;}
-
-    if (watchId !== null) {
-        navigator.geolocation.clearWatch(watchId);
-        watchId = null;
-    }
-
+    if (state === STATUS.IDLE) { return; }
+    if (watchId !== null) { navigator.geolocation.clearWatch(watchId); watchId = null; }
     if (errorMsg) {
-        state = STATUS.IDLE;
-        points = [];
-        clearLayers();
-        updateUI();
+        state = STATUS.IDLE; points = []; clearLayers(); updateUI();
         document.getElementById("recordContainer").style.display = "none";
         showToast(errorMsg, "error");
         return;
     }
-
     state = STATUS.PROCESSING;
     updateUI();
     processRecording();
 }
 
 export async function stopAndCapture() {
-    if (state !== STATUS.RECORDING) {return;}
-
-    if (watchId !== null) {
-        navigator.geolocation.clearWatch(watchId);
-        watchId = null;
-    }
-
+    if (state !== STATUS.RECORDING) { return; }
+    if (watchId !== null) { navigator.geolocation.clearWatch(watchId); watchId = null; }
     if (points.length < 5) {
         showToast("⚠ Слишком мало точек. Нужно минимум 5.", "error");
-        state = STATUS.IDLE;
-        points = [];
-        clearLayers();
-        updateUI();
+        state = STATUS.IDLE; points = []; clearLayers(); updateUI();
         document.getElementById("recordContainer").style.display = "none";
         return;
     }
-
     state = STATUS.PROCESSING;
     updateUI();
     await processRecording();
@@ -212,55 +137,57 @@ export async function stopAndCapture() {
 
 async function processRecording() {
     const token = localStorage.getItem("token");
-    if (!token) {
-        showToast("❌ Требуется авторизация", "error");
-        resetAfterRecording();
-        return;
-    }
+    if (!token) { showToast("❌ Требуется авторизация", "error"); resetAfterRecording(); return; }
 
-    const payload = {
-        points: points.map(p => [p.lat, p.lng, p.timestamp]),
-    };
+    const payload = { points: points.map(p => [p.lat, p.lng, p.timestamp]) };
 
+    // keepalive: true — запрос дойдёт даже если страница закроется
     try {
         const res = await fetch(`${API}/api/capture-ride`, {
             method: "POST",
-            headers: {
-                "Content-Type": "application/json",
-                Authorization: `Bearer ${token}`,
-            },
+            headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
             body: JSON.stringify(payload),
+            keepalive: true,
         });
-
         const data = await res.json();
-
-        if (!res.ok) {
-            showToast(data.detail || "Ошибка захвата", "error");
-            resetAfterRecording();
-            return;
-        }
-
+        if (!res.ok) { showToast(data.detail || "Ошибка захвата", "error"); resetAfterRecording(); return; }
         showToast(`✅ +${(data.area / 1_000_000).toFixed(2)} км²!`, "success");
         showShareModal(data, data.sponsored_rewards);
-
         const { loadTerritories } = await import('./map.js');
         loadTerritories();
-    } catch (e) {
-        showToast("❌ " + e.message, "error");
-    }
+    } catch (e) { showToast("❌ " + e.message, "error"); }
 
     resetAfterRecording();
 }
 
 function resetAfterRecording() {
-    state = STATUS.IDLE;
-    points = [];
-    clearLayers();
-    updateUI();
+    state = STATUS.IDLE; points = []; clearLayers(); updateUI();
     document.getElementById("recordContainer").style.display = "none";
 }
 
 export function initRecorder() {
     const stopBtn = document.getElementById("stopRecordBtn");
-    if (stopBtn) {stopBtn.onclick = stopAndCapture;}
+    if (stopBtn) { stopBtn.onclick = stopAndCapture; }
+
+    // Page Visibility: пауза при сворачивании
+    document.addEventListener("visibilitychange", () => {
+        if (state !== STATUS.RECORDING) { return; }
+        if (document.hidden) {
+            wasInBackground = true;
+            if (watchId !== null) {
+                navigator.geolocation.clearWatch(watchId);
+                watchId = null;
+            }
+            updateUI();
+        } else if (wasInBackground) {
+            wasInBackground = false;
+            // последняя известная позиция как точка
+            if (lastKnownPosition) {
+                points.push({ ...lastKnownPosition, timestamp: Date.now() });
+                updatePathOnMap();
+            }
+            startWatch();
+            updateUI();
+        }
+    });
 }
