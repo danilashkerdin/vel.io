@@ -397,6 +397,28 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
 
     const __IS_CAPACITOR__ = window.__IS_CAPACITOR__ || false;
+    // iOS Safari — PWA установка
+    if (isTG || __IS_CAPACITOR__ || isPWA) {
+        // не показываем в TG / нативном / PWA
+    } else if (/iPad|iPhone|iPod/.test(navigator.userAgent) && !localStorage.getItem("ios_pwa_hint_dismissed")) {
+        setTimeout(() => {
+            const hint = document.getElementById("iosPwaHint");
+            if (hint) {
+                hint.classList.add("visible");
+                document.getElementById("overlay").classList.add("visible");
+                document.getElementById("iosPwaHintClose").onclick = () => {
+                    hint.classList.remove("visible");
+                    document.getElementById("overlay").classList.remove("visible");
+                };
+                document.getElementById("iosPwaHintGotIt").onclick = () => {
+                    hint.classList.remove("visible");
+                    document.getElementById("overlay").classList.remove("visible");
+                };
+                localStorage.setItem("ios_pwa_hint_dismissed", "1");
+            }
+        }, 4000);
+    }
+
     if (!__IS_CAPACITOR__ && 'serviceWorker' in navigator) {
         window.addEventListener('load', () => {
             navigator.serviceWorker.register('/sw.js')
