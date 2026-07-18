@@ -18,8 +18,8 @@ button, .menu-item, .toggle, .cta { touch-action: manipulation; }
 /* == FAB == */
 .fab {
     position: fixed;
-    bottom: 28px;
-    right: 24px;
+    bottom: calc(28px + env(safe-area-inset-bottom, 0px));
+    right: calc(24px + env(safe-area-inset-right, 0px));
     width: 60px;
     height: 60px;
     border-radius: 50%;
@@ -51,8 +51,8 @@ button, .menu-item, .toggle, .cta { touch-action: manipulation; }
 /* == Burger == */
 .burger {
     position: fixed;
-    top: 16px;
-    left: 16px;
+    top: calc(16px + env(safe-area-inset-top, 0px));
+    left: calc(16px + env(safe-area-inset-left, 0px));
     width: 44px;
     height: 44px;
     border-radius: var(--radius);
@@ -313,9 +313,9 @@ a.menu-link:active {
 /* == Install Banner == */
 .install-banner {
     position: fixed;
-    bottom: 80px;
-    left: 12px;
-    right: 12px;
+    bottom: calc(80px + env(safe-area-inset-bottom, 0px));
+    left: calc(12px + env(safe-area-inset-left, 0px));
+    right: calc(12px + env(safe-area-inset-right, 0px));
     z-index: 1400;
     background: var(--color-surface);
     border: 1px solid var(--color-border);

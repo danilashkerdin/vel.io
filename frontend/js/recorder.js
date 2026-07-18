@@ -65,8 +65,49 @@ function updatePathOnMap() {
     }
 }
 
+function distMeters(lat1, lng1, lat2, lng2) {
+    const R = 6371000;
+    const dLat = (lat2 - lat1) * Math.PI / 180;
+    const dLng = (lng2 - lng1) * Math.PI / 180;
+    const a = Math.sin(dLat / 2) ** 2 + Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * Math.sin(dLng / 2) ** 2;
+    return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+}
+
+let recoveredFromSleep = false;
+let stablePointsAfterSleep = 0;
+
 function addPoint(lat, lng, accuracy) {
-    lastKnownPosition = { lat, lng, timestamp: Date.now(), accuracy: accuracy || 0 };
+    const now = Date.now();
+    const prev = points[points.length - 1];
+
+    if (prev) {
+        const dt = (now - prev.timestamp) / 1000;
+        const d = distMeters(prev.lat, prev.lng, lat, lng);
+        if (dt < 3 && d > 50 && (accuracy || d) > 20) {
+            return;
+        }
+        if (d < 1.5) {
+            return;
+        }
+    }
+
+    if (recoveredFromSleep) {
+        const prev2 = points.length >= 2 ? points[points.length - 2] : null;
+        if (prev && prev2) {
+            const dPrev = distMeters(prev2.lat, prev2.lng, prev.lat, prev.lng);
+            const dNew = distMeters(prev.lat, prev.lng, lat, lng);
+            if (stablePointsAfterSleep < 3 && dNew > dPrev * 3 && dNew > 10) {
+                stablePointsAfterSleep++;
+                return;
+            }
+        }
+        stablePointsAfterSleep++;
+        if (stablePointsAfterSleep >= 3) {
+            recoveredFromSleep = false;
+        }
+    }
+
+    lastKnownPosition = { lat, lng, timestamp: now, accuracy: accuracy || 0 };
     points.push(lastKnownPosition);
     updatePathOnMap();
     updateUI();
@@ -99,7 +140,7 @@ async function startWatch() {
             capWatcher = null;
         }
         capWatcher = await capGeo.watchPosition(
-            { enableHighAccuracy: true, timeout: 10000 },
+            { enableHighAccuracy: true, timeout: 5000 },
             (pos, err) => {
                 if (err) { onPositionError(err); return; }
                 if (pos) {
@@ -115,8 +156,8 @@ async function startWatch() {
     }
     watchId = navigator.geolocation.watchPosition(onPositionSuccess, onPositionError, {
         enableHighAccuracy: true,
-        timeout: 10000,
-        maximumAge: 5000,
+        timeout: 5000,
+        maximumAge: 3000,
     });
 }
 
@@ -216,10 +257,8 @@ export function initRecorder() {
             updateUI();
         } else if (wasInBackground) {
             wasInBackground = false;
-            if (lastKnownPosition) {
-                points.push({ ...lastKnownPosition, timestamp: Date.now() });
-                updatePathOnMap();
-            }
+            recoveredFromSleep = true;
+            stablePointsAfterSleep = 0;
             startWatch();
             updateUI();
         }

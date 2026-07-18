@@ -317,6 +317,9 @@ document.addEventListener("DOMContentLoaded", async () => {
         else { loadNotifications(); startNotifPolling(); }
     });
 
+    // Keep Render free instance alive
+    setInterval(() => { fetch(`${API}/api/health`).catch(() => {}); }, 60000);
+
     document.querySelectorAll(".modal-close").forEach(b => b.onclick = closeModals);
     document.querySelectorAll(".modal").forEach(m => m.onclick = e => { if (e.target === m) {closeModals();} });
 
