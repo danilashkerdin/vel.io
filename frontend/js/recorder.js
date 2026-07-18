@@ -1,7 +1,7 @@
 import { getMap } from './map.js';
 import { showToast } from './ui.js';
 import { showShareModal } from './share.js';
-import { API } from './config.js';
+import { API, IS_CAPACITOR } from './config.js';
 
 const STATUS = { IDLE: "idle", RECORDING: "recording", PROCESSING: "processing" };
 let state = STATUS.IDLE;
@@ -12,6 +12,7 @@ let userMarker = null;
 let startTime = null;
 let wasInBackground = false;
 let lastKnownPosition = null;
+let capWatcher = null;
 
 export function isRecording() { return state === STATUS.RECORDING; }
 
@@ -63,13 +64,16 @@ function updatePathOnMap() {
     }
 }
 
-function onPositionSuccess(pos) {
-    const { latitude, longitude, accuracy } = pos.coords;
-    const now = Date.now();
-    lastKnownPosition = { lat: latitude, lng: longitude, timestamp: now, accuracy };
+function addPoint(lat, lng, accuracy) {
+    lastKnownPosition = { lat, lng, timestamp: Date.now(), accuracy: accuracy || 0 };
     points.push(lastKnownPosition);
     updatePathOnMap();
     updateUI();
+}
+
+function onPositionSuccess(pos) {
+    const { latitude, longitude, accuracy } = pos.coords;
+    addPoint(latitude, longitude, accuracy);
 }
 
 function onPositionError(err) {
@@ -77,7 +81,34 @@ function onPositionError(err) {
     if (err.code === 1) { stopRecording("Доступ к геолокации запрещён"); }
 }
 
-function startWatch() {
+function getCapacitorGeolocation() {
+    try {
+        const cap = window.Capacitor;
+        if (cap?.Plugins?.Geolocation) return cap.Plugins.Geolocation;
+    } catch {}
+    return null;
+}
+
+async function startWatch() {
+    const capGeo = IS_CAPACITOR ? getCapacitorGeolocation() : null;
+
+    if (capGeo) {
+        if (capWatcher) {
+            try { await capWatcher.remove(); } catch {}
+            capWatcher = null;
+        }
+        capWatcher = await capGeo.watchPosition(
+            { enableHighAccuracy: true, timeout: 10000 },
+            (pos, err) => {
+                if (err) { onPositionError(err); return; }
+                if (pos) {
+                    addPoint(pos.coords.latitude, pos.coords.longitude, pos.coords.accuracy);
+                }
+            }
+        );
+        return;
+    }
+
     if (watchId !== null) {
         navigator.geolocation.clearWatch(watchId);
     }
@@ -86,6 +117,14 @@ function startWatch() {
         timeout: 10000,
         maximumAge: 5000,
     });
+}
+
+function stopWatch() {
+    if (capWatcher) {
+        try { capWatcher.remove(); } catch {}
+        capWatcher = null;
+    }
+    if (watchId !== null) { navigator.geolocation.clearWatch(watchId); watchId = null; }
 }
 
 export function startRecording() {
@@ -109,7 +148,7 @@ export function startRecording() {
 
 function stopRecording(errorMsg) {
     if (state === STATUS.IDLE) { return; }
-    if (watchId !== null) { navigator.geolocation.clearWatch(watchId); watchId = null; }
+    stopWatch();
     if (errorMsg) {
         state = STATUS.IDLE; points = []; clearLayers(); updateUI();
         document.getElementById("recordContainer").style.display = "none";
@@ -123,7 +162,7 @@ function stopRecording(errorMsg) {
 
 export async function stopAndCapture() {
     if (state !== STATUS.RECORDING) { return; }
-    if (watchId !== null) { navigator.geolocation.clearWatch(watchId); watchId = null; }
+    stopWatch();
     if (points.length < 5) {
         showToast("⚠ Слишком мало точек. Нужно минимум 5.", "error");
         state = STATUS.IDLE; points = []; clearLayers(); updateUI();
@@ -141,7 +180,6 @@ async function processRecording() {
 
     const payload = { points: points.map(p => [p.lat, p.lng, p.timestamp]) };
 
-    // keepalive: true — запрос дойдёт даже если страница закроется
     try {
         const res = await fetch(`${API}/api/capture-ride`, {
             method: "POST",
@@ -169,19 +207,14 @@ export function initRecorder() {
     const stopBtn = document.getElementById("stopRecordBtn");
     if (stopBtn) { stopBtn.onclick = stopAndCapture; }
 
-    // Page Visibility: пауза при сворачивании
     document.addEventListener("visibilitychange", () => {
         if (state !== STATUS.RECORDING) { return; }
         if (document.hidden) {
             wasInBackground = true;
-            if (watchId !== null) {
-                navigator.geolocation.clearWatch(watchId);
-                watchId = null;
-            }
+            stopWatch();
             updateUI();
         } else if (wasInBackground) {
             wasInBackground = false;
-            // последняя известная позиция как точка
             if (lastKnownPosition) {
                 points.push({ ...lastKnownPosition, timestamp: Date.now() });
                 updatePathOnMap();

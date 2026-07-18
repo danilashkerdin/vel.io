@@ -320,7 +320,82 @@ document.addEventListener("DOMContentLoaded", async () => {
     document.querySelectorAll(".modal-close").forEach(b => b.onclick = closeModals);
     document.querySelectorAll(".modal").forEach(m => m.onclick = e => { if (e.target === m) {closeModals();} });
 
-    if ('serviceWorker' in navigator) {
+    const { IS_CAPACITOR } = await import('./config.js');
+
+    // Баннер установки нативного приложения
+    if (!IS_CAPACITOR) {
+        const isStandalone = window.matchMedia('(display-mode: standalone)').matches;
+        const isTG = isTelegramWebApp();
+        const isPWA = isStandalone || (window.navigator.standalone === true);
+
+        if (!isPWA && !isTG) {
+            const banner = document.getElementById("installBanner");
+            const closeBtn = document.getElementById("installBannerClose");
+            const installBtn = document.getElementById("installAppBtn");
+
+            installBtn.onclick = () => {
+                if (navigator.share) {
+                    navigator.share({
+                        title: "Velo.io",
+                        text: "🚴 Захватывай территории на Velo.io!",
+                        url: "https://vel-io.onrender.com"
+                    });
+                } else {
+                    window.open("https://vel-io.onrender.com", "_blank");
+                }
+                banner.style.display = "none";
+                localStorage.setItem("install_banner_dismissed", "1");
+            };
+            closeBtn.onclick = () => {
+                banner.style.display = "none";
+                localStorage.setItem("install_banner_dismissed", "1");
+            };
+
+            if (!localStorage.getItem("install_banner_dismissed")) {
+                setTimeout(() => { banner.style.display = "block"; }, 5000);
+            }
+        } else if (isTG) {
+            const banner = document.getElementById("installBanner");
+            const closeBtn = document.getElementById("installBannerClose");
+            const installBtn = document.getElementById("installAppBtn");
+
+            if (isTG) {
+                document.querySelector(".install-banner-text").textContent = "📱 Открыть в нативном приложении";
+                installBtn.textContent = "Установить";
+                const botUsername = "vel_io_bot";
+                const appUrl = "https://vel-io.onrender.com";
+                (async () => {
+                    const { isAndroid, isIOS } = await import('./telegram.js');
+                    if (isAndroid()) {
+                        installBtn.onclick = () => {
+                            window.open("https://rustore.ru/app/io.velo.app", "_blank");
+                            banner.style.display = "none";
+                        };
+                    } else if (isIOS()) {
+                        installBtn.onclick = () => {
+                            window.open("https://apps.apple.com/app/idXXXXXXXXX", "_blank");
+                            banner.style.display = "none";
+                        };
+                    } else {
+                        installBtn.onclick = () => {
+                            window.open(appUrl, "_blank");
+                            banner.style.display = "none";
+                        };
+                    }
+                })();
+            }
+
+            closeBtn.onclick = () => {
+                banner.style.display = "none";
+                localStorage.setItem("install_banner_dismissed", "1");
+            };
+            if (!localStorage.getItem("install_banner_dismissed")) {
+                setTimeout(() => { banner.style.display = "block"; }, 3000);
+            }
+        }
+    }
+
+    if (!IS_CAPACITOR && 'serviceWorker' in navigator) {
         window.addEventListener('load', () => {
             navigator.serviceWorker.register('/sw.js')
                 .then((reg) => {

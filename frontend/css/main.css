@@ -309,6 +309,66 @@ a.menu-link:active {
     box-shadow: 0 2px 8px rgba(255, 23, 68, 0.4);
 }
 
+/* == Install Banner == */
+.install-banner {
+    position: fixed;
+    bottom: 80px;
+    left: 12px;
+    right: 12px;
+    z-index: 1400;
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: 14px;
+    padding: 12px 16px;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+    animation: slideUp 0.3s ease;
+}
+
+.install-banner-content {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.install-banner-text {
+    flex: 1;
+    font-size: 14px;
+    font-weight: 500;
+}
+
+.install-banner-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-shrink: 0;
+}
+
+.install-banner-btn {
+    padding: 8px 16px;
+    background: var(--gradient-primary);
+    border: none;
+    border-radius: 10px;
+    color: #fff;
+    font-weight: 600;
+    font-size: 13px;
+    cursor: pointer;
+    white-space: nowrap;
+}
+
+.install-banner-close {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.08);
+    border: none;
+    color: var(--color-text-muted);
+    font-size: 14px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
 /* == Overlay == */
 .overlay {
     position: fixed;

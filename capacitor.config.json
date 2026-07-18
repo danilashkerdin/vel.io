@@ -1,0 +1,10 @@
+{
+  "appId": "io.velo.app",
+  "appName": "Velo.io",
+  "webDir": "frontend",
+  "bundledWebRuntime": false,
+  "server": {
+    "hostname": "velio.app",
+    "androidScheme": "https"
+  }
+}
