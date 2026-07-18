@@ -167,6 +167,9 @@ function stopWatch() {
         capWatcher = null;
     }
     if (watchId !== null) { navigator.geolocation.clearWatch(watchId); watchId = null; }
+    if (IS_CAPACITOR && window.Capacitor?.Plugins?.BackgroundGeolocation) {
+        window.Capacitor.Plugins.BackgroundGeolocation.stop();
+    }
 }
 
 export function startRecording() {
@@ -184,6 +187,11 @@ export function startRecording() {
     document.getElementById("recordContainer").style.display = "block";
 
     startWatch();
+
+    if (IS_CAPACITOR && window.Capacitor?.Plugins?.BackgroundGeolocation) {
+        window.Capacitor.Plugins.BackgroundGeolocation.start();
+    }
+
     updateUI();
     showToast("🚴 Запись начата! Поехали!", "success");
 }
@@ -244,6 +252,12 @@ function resetAfterRecording() {
     state = STATUS.IDLE; points = []; clearLayers(); updateUI();
     document.getElementById("recordContainer").style.display = "none";
 }
+
+// Принимает точки из нативного Foreground Service (Android)
+window.__backgroundLocation = (lat, lng, accuracy, timestamp) => {
+    if (state !== STATUS.RECORDING) return;
+    addPoint(lat, lng, accuracy);
+};
 
 export function initRecorder() {
     const stopBtn = document.getElementById("stopRecordBtn");
