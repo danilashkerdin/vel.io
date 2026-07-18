@@ -73,9 +73,6 @@ function distMeters(lat1, lng1, lat2, lng2) {
     return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 }
 
-let recoveredFromSleep = false;
-let stablePointsAfterSleep = 0;
-
 function addPoint(lat, lng, accuracy) {
     const now = Date.now();
     const prev = points[points.length - 1];
@@ -83,28 +80,11 @@ function addPoint(lat, lng, accuracy) {
     if (prev) {
         const dt = (now - prev.timestamp) / 1000;
         const d = distMeters(prev.lat, prev.lng, lat, lng);
-        if (dt < 3 && d > 50 && (accuracy || d) > 20) {
-            return;
-        }
-        if (d < 1.5) {
-            return;
-        }
-    }
+        const speedKmh = dt > 0 ? (d / dt) * 3.6 : 0;
 
-    if (recoveredFromSleep) {
-        const prev2 = points.length >= 2 ? points[points.length - 2] : null;
-        if (prev && prev2) {
-            const dPrev = distMeters(prev2.lat, prev2.lng, prev.lat, prev.lng);
-            const dNew = distMeters(prev.lat, prev.lng, lat, lng);
-            if (stablePointsAfterSleep < 3 && dNew > dPrev * 3 && dNew > 10) {
-                stablePointsAfterSleep++;
-                return;
-            }
-        }
-        stablePointsAfterSleep++;
-        if (stablePointsAfterSleep >= 3) {
-            recoveredFromSleep = false;
-        }
+        if (d < 1.5) return;
+
+        if (speedKmh < 3) return;
     }
 
     lastKnownPosition = { lat, lng, timestamp: now, accuracy: accuracy || 0 };
@@ -253,7 +233,6 @@ function resetAfterRecording() {
     document.getElementById("recordContainer").style.display = "none";
 }
 
-// Принимает точки из нативного Foreground Service (Android)
 window.__backgroundLocation = (lat, lng, accuracy, timestamp) => {
     if (state !== STATUS.RECORDING) return;
     addPoint(lat, lng, accuracy);
@@ -271,8 +250,10 @@ export function initRecorder() {
             updateUI();
         } else if (wasInBackground) {
             wasInBackground = false;
-            recoveredFromSleep = true;
-            stablePointsAfterSleep = 0;
+            if (lastKnownPosition) {
+                points.push({ ...lastKnownPosition, timestamp: Date.now() });
+                updatePathOnMap();
+            }
             startWatch();
             updateUI();
         }

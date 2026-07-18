@@ -48,9 +48,9 @@ public class TrackingService extends Service {
 
         startForeground(NOTIFICATION_ID, notification);
 
-        LocationRequest request = new LocationRequest.Builder(Priority.PRIORITY_HIGH_ACCURACY, 3000)
-                .setMinUpdateIntervalMillis(2000)
-                .setWaitForAccurateLocation(true)
+        LocationRequest request = new LocationRequest.Builder(Priority.PRIORITY_HIGH_ACCURACY, 1000)
+                .setMinUpdateIntervalMillis(500)
+                .setWaitForAccurateLocation(false)
                 .build();
 
         locationCallback = new LocationCallback() {
