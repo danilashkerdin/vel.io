@@ -1,7 +1,9 @@
+import asyncio
 import logging
 import time
 from contextlib import asynccontextmanager
 
+import httpx
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
@@ -28,7 +30,21 @@ async def lifespan(app: FastAPI):
     logger.info("Starting Velo.io backend…")
     init_db()
     logger.info("Database tables ensured")
+
+    async def keep_alive():
+        base_url = settings.APP_URL.rstrip("/")
+        while True:
+            await asyncio.sleep(300)
+            try:
+                async with httpx.AsyncClient() as client:
+                    r = await client.get(f"{base_url}/api/health", timeout=10)
+                    logger.info("Keep-alive ping: %s", r.status_code)
+            except Exception as e:
+                logger.warning("Keep-alive ping failed: %s", e)
+
+    task = asyncio.create_task(keep_alive())
     yield
+    task.cancel()
     logger.info("Shutting down Velo.io backend")
 
 

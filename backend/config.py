@@ -25,6 +25,7 @@ class Settings(BaseSettings):
     TELEGRAM_BOT_USERNAME: str = "velio_bot"
 
     FRONTEND_URL: str = "http://localhost:3000"
+    APP_URL: str = "http://localhost:8000"
 
     SPONSORED_TIERS_JSON: str = (
         '[{"name":"Старт","stars":1000,"icon_size":32},'
