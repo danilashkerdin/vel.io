@@ -34,7 +34,7 @@ async def lifespan(app: FastAPI):
     async def keep_alive():
         base_url = settings.APP_URL.rstrip("/")
         while True:
-            await asyncio.sleep(300)
+            await asyncio.sleep(30)
             try:
                 async with httpx.AsyncClient() as client:
                     r = await client.get(f"{base_url}/api/health", timeout=10)
