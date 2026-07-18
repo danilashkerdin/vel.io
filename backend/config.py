@@ -11,7 +11,7 @@ class Settings(BaseSettings):
     CORS_ORIGINS: str = '["http://localhost:3000","http://localhost:8000"]'
 
     FREE_CAPTURES_LIMIT: int = 1
-    FREE_PREMIUM_SLOTS: int = 30
+    FREE_PREMIUM_SLOTS: int = 100
     PREMIUM_PRICE_STARS: int = 200
 
     TON_MAINNET: bool = False

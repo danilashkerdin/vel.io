@@ -72,6 +72,14 @@ def init_db():
             conn.execute(text("ALTER TABLE users DROP COLUMN stripe_customer_id"))
             conn.commit()
             logger.info("Dropped column users.stripe_customer_id")
+    with engine.connect() as conn:
+        conn.execute(text(
+            f"UPDATE users SET is_premium = TRUE WHERE id IN "
+            f"(SELECT id FROM users ORDER BY created_at ASC LIMIT {settings.FREE_PREMIUM_SLOTS})"
+            f" AND is_premium = FALSE"
+        ))
+        conn.commit()
+        logger.info("Free premium granted to first %d users", settings.FREE_PREMIUM_SLOTS)
     cols = _get_columns("users")
     if "yoomoney_wallet" in cols and "ton_wallet" not in cols:
         with engine.connect() as conn:
