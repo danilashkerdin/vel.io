@@ -48,7 +48,7 @@ async def global_exception_handler(request: Request, exc: Exception):
 # CORS: FRONTEND_URL + CORS_ORIGINS + fallback
 _cors_origins = settings.cors_origins_list
 
-for origin in [settings.FRONTEND_URL, "capacitor://localhost", "http://localhost", "https://velio.app"]:
+for origin in [settings.FRONTEND_URL, "capacitor://localhost", "http://localhost", "https://localhost", "https://velio.app"]:
     if origin not in _cors_origins:
         _cors_origins.append(origin)
 logger.info("CORS origins: %s", _cors_origins)

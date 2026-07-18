@@ -63,12 +63,13 @@ button, .menu-item, .toggle, .cta { touch-action: manipulation; }
     color: #fff;
     font-size: 20px;
     cursor: pointer;
-    z-index: 1000;
+    z-index: 10000;
     display: flex;
     align-items: center;
     justify-content: center;
     transition: background 0.2s;
     box-shadow: 0 4px 16px rgba(0,0,0,0.3);
+    pointer-events: auto;
 }
 
 .burger:hover { background: rgba(255,255,255,0.1); }

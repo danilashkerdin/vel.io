@@ -14,4 +14,4 @@ export const API = isCapacitor
             ? "http://localhost:8000"
             : "";
 
-export const IS_CAPACITOR = isCapacitor;
+window.__IS_CAPACITOR__ = isCapacitor;

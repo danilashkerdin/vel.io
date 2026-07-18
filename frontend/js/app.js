@@ -320,10 +320,8 @@ document.addEventListener("DOMContentLoaded", async () => {
     document.querySelectorAll(".modal-close").forEach(b => b.onclick = closeModals);
     document.querySelectorAll(".modal").forEach(m => m.onclick = e => { if (e.target === m) {closeModals();} });
 
-    const { IS_CAPACITOR } = await import('./config.js');
-
     // Баннер установки нативного приложения
-    if (!IS_CAPACITOR) {
+    if (!__IS_CAPACITOR__) {
         const isStandalone = window.matchMedia('(display-mode: standalone)').matches;
         const isTG = isTelegramWebApp();
         const isPWA = isStandalone || (window.navigator.standalone === true);
@@ -395,7 +393,8 @@ document.addEventListener("DOMContentLoaded", async () => {
         }
     }
 
-    if (!IS_CAPACITOR && 'serviceWorker' in navigator) {
+    const __IS_CAPACITOR__ = window.__IS_CAPACITOR__ || false;
+    if (!__IS_CAPACITOR__ && 'serviceWorker' in navigator) {
         window.addEventListener('load', () => {
             navigator.serviceWorker.register('/sw.js')
                 .then((reg) => {

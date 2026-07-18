@@ -1,7 +1,8 @@
 import { getMap } from './map.js';
 import { showToast } from './ui.js';
 import { showShareModal } from './share.js';
-import { API, IS_CAPACITOR } from './config.js';
+import { API } from './config.js';
+const IS_CAPACITOR = window.__IS_CAPACITOR__ || false;
 
 const STATUS = { IDLE: "idle", RECORDING: "recording", PROCESSING: "processing" };
 let state = STATUS.IDLE;
