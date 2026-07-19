@@ -129,6 +129,16 @@ def validate_gpx(content: str) -> Optional[str]:
             p1, p2 = timed_points[i - 1], timed_points[i]
             dt = (p2.time - p1.time).total_seconds()
             dist = _haversine(p1.latitude, p1.longitude, p2.latitude, p2.longitude)
+
+            if dt > 0:
+                cur_speed = dist / dt
+
+                if i >= 2:
+                    prev_speed = seg_dists[-1] / max((timed_points[i-1].time - timed_points[i-2].time).total_seconds(), 0.001)
+                    accel = abs(cur_speed - prev_speed) / dt
+                    if accel > 15 and dist > prev_speed * 3:
+                        continue
+
             seg_dists.append(dist)
             total_dist += dist
             if dt > 0:
