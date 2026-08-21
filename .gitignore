@@ -7,3 +7,25 @@ __pycache__/
 *.egg-info/
 node_modules/
 frontend/node_modules/
+
+# RuStore assets (local only)
+screenshots/*.png
+screenshots/*.jpg
+
+# Playwright e2e artifacts
+test-results/
+playwright-report/
+blob-report/
+
+# Android signing keys, certification and store secrets (must NEVER be committed)
+*.jks
+*.keystore
+*.pem
+pepk_out.zip
+rustore-upload-key.zip
+android/app/upload_certificate.pem
+
+# iOS build artifacts
+*.ipa
+ios/Velo.ipa
+ios/App/App/Pods/

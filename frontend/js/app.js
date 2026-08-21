@@ -1,4 +1,5 @@
 import { requireAuth, logout, getUser, isPremium, saveUserData } from './auth.js';
+import { API } from './config.js';
 import { initMap, loadTerritories } from './map.js';
 import { setupUpload } from './upload.js';
 import { editTerritory, saveTerritory, setTerritoriesData } from './editor.js';
@@ -196,6 +197,8 @@ function shareReferralTelegram() {
 // ─── Init ───
 
 document.addEventListener("DOMContentLoaded", async () => {
+    const __IS_CAPACITOR__ = window.__IS_CAPACITOR__ || false;
+    const isPWA = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
     // Telegram Mini App: логин через initData
     const isTG = isTelegramWebApp();
     if (isTG) {
@@ -325,10 +328,6 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     // Баннер установки нативного приложения
     if (!__IS_CAPACITOR__) {
-        const isStandalone = window.matchMedia('(display-mode: standalone)').matches;
-        const isTG = isTelegramWebApp();
-        const isPWA = isStandalone || (window.navigator.standalone === true);
-
         if (!isPWA && !isTG) {
             const banner = document.getElementById("installBanner");
             const closeBtn = document.getElementById("installBannerClose");
@@ -396,7 +395,6 @@ document.addEventListener("DOMContentLoaded", async () => {
         }
     }
 
-    const __IS_CAPACITOR__ = window.__IS_CAPACITOR__ || false;
     // iOS Safari — PWA установка
     if (isTG || __IS_CAPACITOR__ || isPWA) {
         // не показываем в TG / нативном / PWA

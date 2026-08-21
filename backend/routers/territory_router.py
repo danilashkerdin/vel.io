@@ -2,6 +2,7 @@ import asyncio
 import hashlib
 import logging
 import time
+import uuid
 from datetime import datetime, timezone, timedelta
 
 from fastapi import APIRouter, UploadFile, File, Depends, HTTPException, Query, Request
@@ -29,7 +30,7 @@ from services.territory_service import (
 )
 from services.sponsored_service import process_capture_rewards, get_sponsored_in_bbox
 from services.achievement_service import check_achievements_on_capture
-from limiter import limiter
+from limiter import limit_rate
 
 router = APIRouter(tags=["territories"])
 
@@ -115,11 +116,16 @@ def _save_and_return(
     if sha256:
         db.execute(
             text("""
-                INSERT INTO gpx_hashes (sha256, user_id, territory_id)
-                VALUES (:sha256, :user_id, :territory_id)
+                INSERT INTO gpx_hashes (id, sha256, user_id, territory_id)
+                VALUES (:id, :sha256, :user_id, :territory_id)
                 ON CONFLICT (sha256) DO NOTHING
             """),
-            {"sha256": sha256, "user_id": current_user.id, "territory_id": territory.id},
+            {
+                "id": uuid.uuid4(),
+                "sha256": sha256,
+                "user_id": current_user.id,
+                "territory_id": territory.id,
+            },
         )
     db.commit()
 
@@ -132,7 +138,7 @@ def _save_and_return(
 
 
 @router.post("/api/capture-ride")
-@limiter.limit("10/minute")
+@limit_rate("10/minute")
 async def capture_ride(
     request: Request,
     body: CaptureRideRequest,
@@ -214,7 +220,7 @@ async def plan_route(body: PlanRouteRequest):
 
 
 @router.post("/api/upload-gpx")
-@limiter.limit("10/minute")
+@limit_rate("10/minute")
 async def upload_gpx(
     request: Request,
     file: UploadFile = File(...),

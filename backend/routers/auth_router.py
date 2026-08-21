@@ -13,7 +13,7 @@ from auth import hash_password, verify_password_async, create_access_token, get_
 from schemas.auth import RegisterRequest, LoginRequest
 from schemas.payment import ProfileUpdateRequest
 from config import settings
-from limiter import limiter
+from limiter import limit_rate
 from services.achievement_service import check_achievements_on_referral
 
 router = APIRouter(prefix="/api/auth", tags=["auth"])
@@ -42,7 +42,7 @@ def _user_response(user: User, token: str | None = None):
 
 
 @router.post("/register")
-@limiter.limit("5/minute")
+@limit_rate("5/minute")
 async def register(request: Request, data: RegisterRequest, db: Session = Depends(get_db)):
     existing = db.query(User).filter(User.email == data.email).first()
     if existing:
@@ -92,7 +92,7 @@ async def register(request: Request, data: RegisterRequest, db: Session = Depend
 
 
 @router.post("/login")
-@limiter.limit("10/minute")
+@limit_rate("10/minute")
 async def login(request: Request, data: LoginRequest, db: Session = Depends(get_db)):
     user = db.query(User).filter(User.email == data.email).first()
     if not user or not await verify_password_async(data.password, user.hashed_password):
@@ -103,7 +103,7 @@ async def login(request: Request, data: LoginRequest, db: Session = Depends(get_
 
 
 @router.post("/telegram")
-@limiter.limit("10/minute")
+@limit_rate("10/minute")
 async def telegram_auth(request: Request, db: Session = Depends(get_db)):
     """Login via Telegram Mini App init data. No password needed."""
     body = await request.json()
