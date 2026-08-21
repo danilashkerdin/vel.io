@@ -21,6 +21,10 @@ class Settings(BaseSettings):
     ADMIN_EMAIL: str = "admin@vel.io"
     VIP_EMAILS: str = "[]"
 
+    # Глобальный тумблер rate limiting. При false — лимиты отключены
+    # (удобно для e2e-тестов на общей локальной БД / едином IP).
+    RATELIMIT_ENABLED: bool = True
+
     TELEGRAM_BOT_TOKEN: str = ""
     TELEGRAM_BOT_USERNAME: str = "velio_bot"
 

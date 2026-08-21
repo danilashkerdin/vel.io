@@ -381,7 +381,9 @@ document.addEventListener("DOMContentLoaded", () => {
 async function loadUsers() {
     const el = document.getElementById("usersList");
     try {
-        const data = await api("/api/admin/users?limit=100");
+        const res = await api("/api/admin/users?limit=100");
+        if (!res) { el.innerHTML = '<p style="color:#f44336;">Ошибка загрузки</p>'; return; }
+        const data = await res.json();
         el.innerHTML = data.map(u => `
             <div style="display:flex;align-items:center;padding:8px 0;border-bottom:1px solid rgba(255,255,255,0.06);gap:8px;flex-wrap:wrap;">
                 <div style="flex:1;min-width:120px;">

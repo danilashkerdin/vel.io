@@ -2,18 +2,12 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
-    <key>CAPACITOR_DEBUG</key>
+	<key>CAPACITOR_DEBUG</key>
 	<string>$(CAPACITOR_DEBUG)</string>
-	<key>NSLocationWhenInUseUsageDescription</key>
-	<string>Velo.io использует геолокацию для записи веломаршрутов</string>
-	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
-	<string>Velo.io использует фоновую геолокацию, чтобы запись не прерывалась при свёрнутом приложении</string>
-	<key>NSLocationAlwaysUsageDescription</key>
-	<string>Velo.io использует фоновую геолокацию, чтобы запись не прерывалась при свёрнутом приложении</string>
 	<key>CFBundleDevelopmentRegion</key>
 	<string>ru</string>
 	<key>CFBundleDisplayName</key>
-        <string>Velo.io</string>
+	<string>Velo.io</string>
 	<key>CFBundleExecutable</key>
 	<string>$(EXECUTABLE_NAME)</string>
 	<key>CFBundleIdentifier</key>
@@ -30,6 +24,12 @@
 	<string>$(CURRENT_PROJECT_VERSION)</string>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
+	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
+	<string>Velo.io использует фоновую геолокацию, чтобы запись не прерывалась при свёрнутом приложении</string>
+	<key>NSLocationAlwaysUsageDescription</key>
+	<string>Velo.io использует фоновую геолокацию, чтобы запись не прерывалась при свёрнутом приложении</string>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>Velo.io использует геолокацию для записи веломаршрутов</string>
 	<key>UILaunchStoryboardName</key>
 	<string>LaunchScreen</string>
 	<key>UIMainStoryboardFile</key>
